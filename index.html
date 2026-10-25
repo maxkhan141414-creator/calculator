@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>शब्द कैलकुलेटर</title>
+<style>
+/* ===== रंग (हल्की थीम डिफ़ॉल्ट, गहरी थीम नीचे) ===== */
+:root{
+  --bg:#e8ecf4;
+  --p1:#ffffff; --p2:#eef2f9; --panel-text:#000000; --panel-sub:#55627f; --gold:#8a4b00;
+  --panel-line:#d3dbea; --panel-shadow:0 8px 20px rgba(30,50,100,.13); --soft:rgba(10,20,50,.07);
+  --key:#ffffff; --key-text:#14213d; --edge:#c5cee0;
+  --op:#d9e1f1; --op-text:#14213d; --op-edge:#b8c4de;
+  --clear:#fde2de; --clear-text:#a1281c; --clear-edge:#f0bdb6;
+  --eq:#f0a82a; --eq-text:#1a1203; --eq-edge:#b97b0c;
+  color-scheme: light;
+}
+:root[data-theme="dark"]{
+  --bg:#090d18; --p1:#1d2e58; --p2:#0f182f; --panel-text:#ffffff; --panel-sub:#a9b8d8; --gold:#ffd98a;
+  --panel-line:#26376a; --panel-shadow:0 10px 24px rgba(0,0,0,.4); --soft:rgba(255,255,255,.09);
+  --key:#1b2542; --key-text:#f1f4fb; --edge:#0d1426;
+  --op:#27345a; --op-text:#f1f4fb; --op-edge:#141c36;
+  --clear:#472022; --clear-text:#ffb4aa; --clear-edge:#26100f;
+  color-scheme: dark;
+}
+
+/* ===== आधार ===== */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg);
+  font-family:"Noto Sans Devanagari","Mukta",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--key-text);
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.app{max-width:480px;height:100%;margin:0 auto;display:flex;flex-direction:column;padding:10px;gap:12px}
+button{touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
+
+/* ===== डिस्प्ले ===== */
+.panel{background:linear-gradient(160deg,var(--p1),var(--p2));color:var(--panel-text);border:1px solid var(--panel-line);border-radius:24px;padding:14px;box-shadow:var(--panel-shadow);display:flex;flex-direction:column;min-height:36%}
+.top{display:flex;align-items:center;gap:8px}
+.round{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--soft);color:var(--panel-text);display:grid;place-items:center;cursor:pointer}
+.expr{flex:1;min-width:0;min-height:1.5em;text-align:right;color:var(--panel-sub);font-size:1.05rem;overflow-x:auto;white-space:nowrap}
+.main{margin:auto 0 8px;text-align:right;font-size:3rem;font-weight:700;line-height:1.15;word-break:break-all;letter-spacing:.5px}
+.main.m{font-size:2.2rem}
+.main.s{font-size:1.65rem}
+.words{min-height:2.4em;text-align:left;font-size:1.3rem;line-height:1.5;color:var(--gold);display:flex;align-items:center}
+
+/* ===== कीपैड ===== */
+.pad{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:10px}
+.key{border:0;border-radius:18px;background:var(--key);color:var(--key-text);font:inherit;font-size:1.7rem;font-weight:600;cursor:pointer;box-shadow:0 4px 0 var(--edge)}
+.key:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.key.op{background:var(--op);color:var(--op-text);box-shadow:0 4px 0 var(--op-edge)}
+.key.op:active{box-shadow:0 1px 0 var(--op-edge)}
+.key.clear{background:var(--clear);color:var(--clear-text);box-shadow:0 4px 0 var(--clear-edge)}
+.key.clear:active{box-shadow:0 1px 0 var(--clear-edge)}
+.key.eq{background:var(--eq);color:var(--eq-text);box-shadow:0 4px 0 var(--eq-edge);grid-column:4;grid-row:4 / span 2;font-size:2.2rem}
+.key.eq:active{box-shadow:0 1px 0 var(--eq-edge)}
+.key.zero{grid-column:1 / span 2}
+@media (prefers-reduced-motion:no-preference){.key{transition:transform .07s,box-shadow .07s}}
+
+/* ===== नीचे से खुलने वाले पैनल (सेटिंग्स और हिस्ट्री) ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.overlay.open{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:480px;max-height:85%;overflow-y:auto;border-radius:24px 24px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.sheet h2{margin:0;font-size:1.15rem}
+.group{display:flex;flex-direction:column;gap:8px}
+.label{color:var(--panel-sub);font-size:.9rem}
+.opts,.actions{display:flex;gap:8px}
+.opts button,.actions button,.wide{border:0;border-radius:14px;padding:13px 8px;font:inherit;font-size:1rem;cursor:pointer;background:var(--op);color:var(--op-text)}
+.opts button,.actions button{flex:1}
+.opts button.on{background:var(--eq);color:var(--eq-text);font-weight:700}
+.actions .danger{background:var(--clear);color:var(--clear-text)}
+.wide{width:100%}
+
+/* ===== हिस्ट्री की सूची ===== */
+.list{overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.item{background:var(--key);border:0;border-radius:14px;padding:10px 14px;text-align:right;font:inherit;color:var(--key-text);cursor:pointer;box-shadow:0 2px 0 var(--edge)}
+.item small{display:block;color:var(--panel-sub);font-size:.85rem}
+.item b{font-size:1.25rem}
+.empty{color:var(--panel-sub);text-align:center;padding:20px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="panel" aria-live="polite">
+    <div class="top">
+      <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="round" id="themeBtn" type="button" data-ia="theme"></button>
+      <div class="expr" id="expr"></div>
+    </div>
+    <div class="main" id="main">0</div>
+    <div class="words" id="words"></div>
+  </section>
+
+  <section class="pad" id="pad">
+    <button class="key clear" data-k="C" type="button">C</button>
+    <button class="key op" data-k="B" type="button" data-ia="erase">⌫</button>
+    <button class="key op" data-k="/" type="button">÷</button>
+    <button class="key op" data-k="*" type="button">×</button>
+
+    <button class="key" data-k="7" type="button">7</button>
+    <button class="key" data-k="8" type="button">8</button>
+    <button class="key" data-k="9" type="button">9</button>
+    <button class="key op" data-k="-" type="button">−</button>
+
+    <button class="key" data-k="4" type="button">4</button>
+    <button class="key" data-k="5" type="button">5</button>
+    <button class="key" data-k="6" type="button">6</button>
+    <button class="key op" data-k="+" type="button">+</button>
+
+    <button class="key" data-k="1" type="button">1</button>
+    <button class="key" data-k="2" type="button">2</button>
+    <button class="key" data-k="3" type="button">3</button>
+    <button class="key eq" data-k="=" type="button">=</button>
+
+    <button class="key zero" data-k="0" type="button">0</button>
+    <button class="key" data-k="." type="button">.</button>
+  </section>
+</div>
+
+<!-- सेटिंग्स -->
+<div class="overlay" id="settings">
+  <div class="sheet" role="dialog" data-ia="settings">
+    <h2 data-i="settings"></h2>
+    <div class="group">
+      <div class="label" data-i="langLabel"></div>
+      <div class="opts" id="optLang">
+        <button type="button" data-l="hi">हिंदी</button>
+        <button type="button" data-l="en">English</button>
+        <button type="button" data-l="off" data-i="off"></button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="label" data-i="soundLabel"></div>
+      <div class="opts" id="optSound">
+        <button type="button" data-s="on" data-i="soundOn"></button>
+        <button type="button" data-s="off" data-i="soundOff"></button>
+      </div>
+    </div>
+    <button type="button" class="wide" id="openHist" data-i="viewHist"></button>
+    <div class="actions"><button type="button" id="setClose" data-i="close"></button></div>
+  </div>
+</div>
+
+<!-- हिस्ट्री -->
+<div class="overlay" id="hist">
+  <div class="sheet" role="dialog" data-ia="history">
+    <h2 data-i="histTitle"></h2>
+    <div class="list" id="list"></div>
+    <div class="actions">
+      <button type="button" id="histClear" class="danger" data-i="clearHist"></button>
+      <button type="button" id="histClose" data-i="close"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ===== 1. अंकों के शब्द (डेटा) =====
+  var HI = ["शून्य","एक","दो","तीन","चार","पाँच","छह","सात","आठ","नौ","दस",
+  "ग्यारह","बारह","तेरह","चौदह","पंद्रह","सोलह","सत्रह","अठारह","उन्नीस","बीस",
+  "इक्कीस","बाईस","तेईस","चौबीस","पच्चीस","छब्बीस","सत्ताईस","अट्ठाईस","उनतीस","तीस",
+  "इकतीस","बत्तीस","तैंतीस","चौंतीस","पैंतीस","छत्तीस","सैंतीस","अड़तीस","उनतालीस","चालीस",
+  "इकतालीस","बयालीस","तैंतालीस","चौवालीस","पैंतालीस","छियालीस","सैंतालीस","अड़तालीस","उनचास","पचास",
+  "इक्यावन","बावन","तिरपन","चौवन","पचपन","छप्पन","सत्तावन","अट्ठावन","उनसठ","साठ",
+  "इकसठ","बासठ","तिरसठ","चौंसठ","पैंसठ","छियासठ","सड़सठ","अड़सठ","उनहत्तर","सत्तर",
+  "इकहत्तर","बहत्तर","तिहत्तर","चौहत्तर","पचहत्तर","छिहत्तर","सतहत्तर","अठहत्तर","उनासी","अस्सी",
+  "इक्यासी","बयासी","तिरासी","चौरासी","पचासी","छियासी","सतासी","अट्ठासी","नवासी","नब्बे",
+  "इक्यानवे","बानवे","तिरानवे","चौरानवे","पचानवे","छियानवे","सत्तानवे","अट्ठानवे","निन्यानवे"];
+
+  var ONES = ["Zero","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  var TENS = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  var EN = [];
+  for (var i = 0; i < 100; i++){
+    EN.push(i < 20 ? ONES[i] : TENS[Math.floor(i / 10)] + (i % 10 ? " " + ONES[i % 10] : ""));
+  }
+
+  // इकाइयाँ भारतीय प्रणाली की हैं: हज़ार, लाख, करोड़ ...
+  var DICT = {
+    hi: {nums: HI, units: ["हज़ार","लाख","करोड़","अरब","खरब","नील"], hundred: "सौ", point: ".", minus: "ऋण"},
+    en: {nums: EN, units: ["Thousand","Lakh","Crore","Arab","Kharab","Neel"], hundred: "Hundred", point: ".", minus: "Minus"}
+  };
+  var MAX_DIGITS = 15;
+
+  // ===== 2. संख्या को हिस्सों, शब्दों और कॉमा में बदलना =====
+  // "23540000" -> [{v:2,u:2}, {v:35,u:1}, {v:40,u:0}]   (u: इकाई का क्रम, "h" = सौ, "" = सादा)
+  function splitParts(whole){
+    var out = [], groups = [];
+    var last3 = whole.slice(-3), rest = whole.slice(0, -3);
+    while (rest.length){ groups.unshift(rest.slice(-2)); rest = rest.slice(0, -2); }
+    groups.forEach(function(g, k){
+      var v = parseInt(g, 10);
+      if (v) out.push({v: v, u: groups.length - 1 - k});
+    });
+    var t = parseInt(last3, 10), h = Math.floor(t / 100), r = t % 100;
+    if (h) out.push({v: h, u: "h"});
+    if (r) out.push({v: r, u: ""});
+    return out;
+  }
+  // 100 से छोटी संख्या शब्द में ("सत्तावन"), बड़ी अंक + इकाई में ("1 लाख 50 हज़ार")
+  function wordsOf(parts, d){
+    if (!parts.length) return d.nums[0];
+    if (parts.length === 1 && parts[0].u === "") return d.nums[parts[0].v];
+    return parts.map(function(p){
+      var unit = p.u === "h" ? d.hundred : (p.u === "" ? "" : d.units[p.u]);
+      return p.v + (unit ? " " + unit : "");
+    }).join(" ");
+  }
+  function indianComma(whole){
+    if (whole.length <= 3) return whole;
+    return whole.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + whole.slice(-3);
+  }
+  // "-1500.25" -> {neg, whole, frac, dot}
+  function splitNum(value){
+    var neg = value.charAt(0) === "-", abs = neg ? value.slice(1) : value, dot = abs.indexOf(".");
+    var whole = dot === -1 ? abs : abs.slice(0, dot);
+    return {
+      neg: neg,
+      whole: whole === "" ? "0" : whole.replace(/^0+(?=\d)/, ""),
+      frac: dot === -1 ? "" : abs.slice(dot + 1),
+      dot: dot !== -1
+    };
+  }
+  function formatNum(n){ return (n.neg ? "−" : "") + indianComma(n.whole) + (n.dot ? "." + n.frac : ""); }
+
+  // ===== 3. गणना (बिना eval) =====
+  function evaluate(str){
+    var tokens = str.match(/\d+\.?\d*|\.\d+|[+\-*\/]/g) || [], i = 0;
+    function factor(){
+      var t = tokens[i++];
+      if (t === "-") return -factor();
+      if (t === undefined) throw new Error("bad");
+      return parseFloat(t);
+    }
+    function term(){
+      var v = factor();
+      while (tokens[i] === "*" || tokens[i] === "/"){
+        var op = tokens[i++], r = factor();
+        if (op === "*") v *= r;
+        else { if (r === 0) throw new Error("div0"); v /= r; }
+      }
+      return v;
+    }
+    function sum(){
+      var v = term();
+      while (tokens[i] === "+" || tokens[i] === "-"){
+        var op = tokens[i++], r = term();
+        v = op === "+" ? v + r : v - r;
+      }
+      return v;
+    }
+    var res = sum();
+    if (!isFinite(res)) throw new Error("inf");
+    return res;
+  }
+  function toPlain(n){
+    var r = parseFloat(n.toPrecision(12));
+    if (Math.abs(r) >= 1e15) throw new Error("big");
+    var s = String(r);
+    return s.indexOf("e") === -1 ? s : r.toFixed(10).replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  // ===== 4. स्टोरेज और सेव की हुई सेटिंग =====
+  var HKEY = "shabd_calc_history", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui", TKEY = "shabd_calc_theme", SKEY = "shabd_calc_sound";
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
+
+  var records = [];                                   // हिस्ट्री
+  try { records = JSON.parse(lsGet(HKEY) || "[]"); } catch(e){}
+  if (!Array.isArray(records)) records = [];
+  records = records.filter(function(h){ return h && typeof h.e === "string" && typeof h.r === "string"; });
+  function saveRecords(){ lsSet(HKEY, JSON.stringify(records.slice(0, 50))); }
+
+  var lang = lsGet(LKEY);                             // शब्द: hi / en / off
+  if (lang !== "hi" && lang !== "en" && lang !== "off") lang = "hi";
+  var uiLang = lsGet(UKEY);                           // ऐप के बाकी लिखे की भाषा: hi / en
+  if (uiLang !== "hi" && uiLang !== "en") uiLang = lang === "en" ? "en" : "hi";
+  var themeMode = lsGet(TKEY);                        // light / dark / auto (फ़ोन के हिसाब से)
+  if (themeMode !== "light" && themeMode !== "dark") themeMode = "auto";
+  var soundOn = lsGet(SKEY) !== "off";
+  var storageOk = lsSet("shabd_calc_test", "1");      // व्यूअर में स्टोरेज चालू है या नहीं
+  try { localStorage.removeItem("shabd_calc_test"); } catch(e){}
+
+  // ===== 5. ऐप की भाषा (हिंदी / English) और तारीख़ =====
+  var I18N = {
+    hi: {title:"शब्द कैलकुलेटर", settings:"सेटिंग्स", erase:"मिटाएँ", theme:"थीम बदलें", history:"हिस्ट्री",
+         langLabel:"भाषा (शब्द कैसे दिखें)", off:"बंद करें", soundLabel:"बटन की आवाज़", soundOn:"चालू", soundOff:"बंद",
+         viewHist:"हिस्ट्री देखें", close:"बंद करें", histTitle:"पिछली गणनाएँ", clearHist:"हिस्ट्री साफ़ करें",
+         noHist:"अभी कोई गणना नहीं है।", noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है, इसलिए बंद होने पर हिस्ट्री मिट सकती है।",
+         err:"त्रुटि", eDiv:"0 से भाग नहीं हो सकता", eBig:"संख्या बहुत बड़ी है", eBad:"गणना सही नहीं है"},
+    en: {title:"Word Calculator", settings:"Settings", erase:"Erase", theme:"Switch theme", history:"History",
+         langLabel:"Language (how words appear)", off:"Off", soundLabel:"Button sound", soundOn:"On", soundOff:"Off",
+         viewHist:"View history", close:"Close", histTitle:"Past calculations", clearHist:"Clear history",
+         noHist:"No calculations yet.", noStore:"Storage is unavailable in this view, so history may be lost when it closes.",
+         err:"Error", eDiv:"Cannot divide by 0", eBig:"Number is too large", eBad:"Invalid calculation"}
+  };
+  function t(k){ return I18N[uiLang][k] || k; }
+  function applyUi(){
+    document.documentElement.lang = uiLang;
+    document.title = t("title");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function(el){ el.textContent = t(el.getAttribute("data-i")); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-ia]"), function(el){ el.setAttribute("aria-label", t(el.getAttribute("data-ia"))); });
+  }
+
+  var DAYS = {
+    hi: ["रविवार","सोमवार","मंगलवार","बुधवार","गुरुवार","शुक्रवार","शनिवार"],
+    en: ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+  };
+  var MONTHS = {
+    hi: ["जनवरी","फ़रवरी","मार्च","अप्रैल","मई","जून","जुलाई","अगस्त","सितंबर","अक्टूबर","नवंबर","दिसंबर"],
+    en: ["January","February","March","April","May","June","July","August","September","October","November","December"]
+  };
+  function fmtWhen(ts){
+    var d = new Date(ts), h = d.getHours(), m = d.getMinutes();
+    var mm = (m < 10 ? "0" : "") + m, h12 = h % 12 === 0 ? 12 : h % 12;
+    var date = DAYS[uiLang][d.getDay()] + ", " + d.getDate() + " " + MONTHS[uiLang][d.getMonth()] + " " + d.getFullYear();
+    if (uiLang === "en") return date + ", " + h12 + ":" + mm + " " + (h < 12 ? "AM" : "PM");
+    var part = h < 4 ? "रात" : h < 12 ? "सुबह" : h < 16 ? "दोपहर" : h < 20 ? "शाम" : "रात";
+    return date + ", " + part + " " + h12 + ":" + mm + " बजे";
+  }
+
+  // ===== 6. कैलकुलेटर की स्थिति और बटन =====
+  var expr = "", result = null, error = "";          // expr: लिखा हुआ, result: = के बाद का जवाब
+  var trail = [];                                     // इसी हिसाब के पूरे हो चुके पिछले चरण: [{e, r}]
+
+  function pretty(e){ return e.replace(/\*/g, "×").replace(/\//g, "÷").replace(/-/g, "−"); }
+  function lastOperand(){ return expr.match(/\d*\.?\d*$/)[0]; }
+
+  // एक पूरा हिसाब = हिस्ट्री में सिर्फ़ एक एंट्री (दोबारा आने पर वही एंट्री ऊपर आ जाती है)
+  function addRecord(e, r){
+    records = records.filter(function(h){ return !(h.e === e && h.r === r); });
+    records.unshift({e: e, r: r, t: Date.now()});
+    records = records.slice(0, 50);
+    saveRecords();
+  }
+  // = के बाद उसी जवाब पर आगे का हिसाब चलाना (पिछला चरण trail में रखा जाता है)
+  function continueFromResult(){
+    trail.push({e: expr, r: result});
+    expr = result; result = null;
+  }
+  // हिसाब पूरा होने पर (C दबने पर, या = के बाद नया हिसाब शुरू होने पर) पूरा हिसाब एक एंट्री में सेव करना
+  function endSession(){
+    var steps = trail.slice(), seg = null;
+    if (result !== null) seg = {e: expr, r: result};
+    else {
+      var x = expr.replace(/[+\-*\/]$/, "");
+      if (x && x !== "-"){ try { seg = {e: x, r: toPlain(evaluate(x))}; } catch(err){} }
+    }
+    if (seg){
+      var onlyNumber = /^-?\d*\.?\d+$/.test(seg.e);       // सिर्फ़ संख्या, कोई क्रिया नहीं
+      if (!(onlyNumber && (steps.length || parseFloat(seg.e) === 0))) steps.push(seg);
+    }
+    if (steps.length){
+      addRecord(steps.map(function(z, i){ return i < steps.length - 1 ? z.e + " = " + z.r : z.e; }).join(", "), steps[steps.length - 1].r);
+    }
+    trail = [];
+  }
+
+  // चल रहा हिसाब फ़ोन में रखना, ताकि ऐप बंद होकर खुलने पर वही का वही मिले
+  var STKEY = "shabd_calc_state";
+  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, r: result, tr: trail})); }
+  function loadState(){
+    try {
+      var st = JSON.parse(lsGet(STKEY) || "null");
+      if (st && /^[0-9+\-*\/.]*$/.test(st.x) && (st.r === null || /^-?[0-9.]+$/.test(st.r)) && Array.isArray(st.tr)){
+        expr = st.x; result = st.r;
+        trail = st.tr.filter(function(z){ return z && typeof z.e === "string" && typeof z.r === "string"; });
+      }
+    } catch(e){}
+  }
+  loadState();
+
+  function press(k){
+    error = "";
+    if (/^[0-9.]$/.test(k)){
+      if (result !== null){ endSession(); expr = ""; result = null; }
+      var cur = lastOperand();
+      if (k === "."){
+        if (cur.indexOf(".") !== -1) return;
+        expr += cur === "" ? "0." : ".";
+      } else {
+        if (cur.replace(".", "").length >= MAX_DIGITS) return;
+        if (cur === "0") expr = expr.slice(0, -1);
+        expr += k;
+      }
+    } else if ("+-*/".indexOf(k) !== -1){
+      if (result !== null) continueFromResult();
+      if (expr === ""){
+        if (k === "-") expr = "-";
+      } else if (expr !== "-"){
+        if (/[+\-*\/]$/.test(expr)) expr = expr.slice(0, -1);
+        expr += k;
+      }
+    } else if (k === "B"){
+      if (result !== null) continueFromResult();
+      expr = expr.slice(0, -1);
+    } else if (k === "C"){
+      endSession();
+      expr = ""; result = null;
+    } else if (k === "="){
+      if (result !== null) return;
+      var e = expr.replace(/[+\-*\/]$/, "");
+      if (!e || e === "-") return;
+      try {
+        result = toPlain(evaluate(e));
+        expr = e;
+      } catch(err){
+        error = err.message === "div0" ? "eDiv" : (err.message === "big" ? "eBig" : "eBad");
+        expr = ""; result = null;
+      }
+    }
+    render();
+    saveState();
+  }
+
+  // ===== 7. डिस्प्ले =====
+  function currentValue(){
+    if (result !== null) return result;
+    var m = expr.replace(/[+\-*\/]$/, "").match(/(?:^-)?\d*\.?\d*$/)[0];
+    return m && m !== "-" ? m : "0";
+  }
+  function render(){
+    var mainEl = $("main"), wordsEl = $("words");
+    if (error){
+      $("expr").textContent = "";
+      mainEl.textContent = t("err");
+      mainEl.className = "main";
+      wordsEl.textContent = t(error);
+      return;
+    }
+    $("expr").textContent = pretty(expr) + (result !== null ? " =" : "");
+
+    var n = splitNum(currentValue()), shown = formatNum(n);
+    mainEl.textContent = shown;
+    mainEl.className = "main" + (shown.length > 16 ? " s" : shown.length > 10 ? " m" : "");
+
+    if (lang === "off"){ wordsEl.textContent = ""; return; }
+    var d = DICT[lang], text = wordsOf(splitParts(n.whole), d);
+    if (n.frac) text += " " + d.point + " " + n.frac;
+    if (n.neg) text = d.minus + " " + text;
+    wordsEl.textContent = text;
+  }
+
+  // ===== 8. हिस्ट्री पैनल =====
+  function note(list, text){
+    var div = document.createElement("div");
+    div.className = "empty";
+    div.textContent = text;
+    list.appendChild(div);
+  }
+  function renderHistory(){
+    var list = $("list");
+    list.innerHTML = "";
+    if (!storageOk) note(list, t("noStore"));
+    if (!records.length){ note(list, t("noHist")); return; }
+    records.forEach(function(h){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "item";
+      var s = document.createElement("small"); s.textContent = pretty(h.e) + " =";
+      var v = document.createElement("b"); v.textContent = formatNum(splitNum(h.r));
+      b.appendChild(s); b.appendChild(v);
+      if (h.t){ var w = document.createElement("small"); w.textContent = fmtWhen(h.t); b.appendChild(w); }
+      b.addEventListener("click", function(){ endSession(); expr = h.e; result = h.r; error = ""; sheet("hist", false); render(); saveState(); });
+      list.appendChild(b);
+    });
+  }
+
+  // ===== 9. थीम (हल्की / गहरी) =====
+  function svg(inner){
+    return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+  }
+  var MOON = svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>');
+  var SUN = svg('<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>');
+  function isDark(){
+    return themeMode === "dark" || (themeMode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  function applyTheme(){
+    document.documentElement.setAttribute("data-theme", isDark() ? "dark" : "light");
+    $("themeBtn").innerHTML = isDark() ? SUN : MOON;
+  }
+  function setTheme(m){ themeMode = m; lsSet(TKEY, m); applyTheme(); }
+
+  // ===== 10. बटन की आवाज़ (Web Audio, कोई ऑडियो फ़ाइल नहीं) =====
+  var audioCtx = null;
+  function beep(k){
+    if (!soundOn) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var now = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(k === "=" ? 880 : "+-*/".indexOf(k) !== -1 ? 660 : (k === "C" || k === "B") ? 440 : 760, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.18, now + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(now); o.stop(now + 0.07);
+    } catch(e){}
+  }
+
+  // ===== 11. सेटिंग्स, पैनल और बटनों से जोड़ना =====
+  function sheet(id, open){ $(id).classList.toggle("open", open); }
+  function mark(id, attr, isOn){
+    Array.prototype.forEach.call($(id).children, function(b){ b.classList.toggle("on", isOn(b.getAttribute(attr))); });
+  }
+  function syncOpts(){
+    mark("optLang", "data-l", function(v){ return v === lang; });
+    mark("optSound", "data-s", function(v){ return (v === "on") === soundOn; });
+  }
+  function setLang(l){
+    lang = l;
+    if (l === "hi" || l === "en") uiLang = l;
+    lsSet(LKEY, lang); lsSet(UKEY, uiLang);
+    syncOpts(); applyUi(); render();
+  }
+  function setSound(on){
+    soundOn = on;
+    lsSet(SKEY, on ? "on" : "off");
+    syncOpts();
+    beep("5");
+  }
+
+  function on(id, fn){ $(id).addEventListener("click", fn); }
+  function onPick(id, attr, fn){
+    on(id, function(ev){
+      var b = ev.target.closest("button[" + attr + "]");
+      if (b) fn(b.getAttribute(attr));
+    });
+  }
+  onPick("pad", "data-k", function(k){ beep(k); press(k); });
+  onPick("optLang", "data-l", setLang);
+  onPick("optSound", "data-s", function(v){ setSound(v === "on"); });
+  on("themeBtn", function(){ setTheme(isDark() ? "light" : "dark"); });
+  on("gearBtn", function(){ syncOpts(); sheet("settings", true); });
+  on("openHist", function(){ sheet("settings", false); renderHistory(); sheet("hist", true); });
+  on("setClose", function(){ sheet("settings", false); });
+  on("histClose", function(){ sheet("hist", false); });
+  on("histClear", function(){ records = []; saveRecords(); renderHistory(); });
+  ["settings", "hist"].forEach(function(id){   // बाहर के काले हिस्से पर टैप से बंद
+    on(id, function(ev){ if (ev.target === $(id)) sheet(id, false); });
+  });
+
+  applyTheme();
+  applyUi();
+  render();
+})();
+</script>
+</body>
+</html>
