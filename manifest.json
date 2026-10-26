@@ -1,13 +1,18 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
-  "display": "standalone",
+  "id": "word-calculator",
   "name": "Word Calculator",
-  "orientation": "any",
-  "scope": "/",
   "short_name": "Calculator",
-  "start_url": "/",
-  "theme_color": "#ffffff",
   "description": "A calculator that shows numbers in the Indian system (lakh, crore) and reads them out in Hindi or English words. Includes history, light and dark themes, and button sounds. Works offline.",
-  "id": "word-calculator"
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "en",
+  "background_color": "#e8ecf4",
+  "theme_color": "#1d2e58",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
 }
