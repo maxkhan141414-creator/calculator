@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d2e58">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>शब्द कैलकुलेटर</title>
 <style>
 /* ===== रंग (हल्की थीम डिफ़ॉल्ट, गहरी थीम नीचे) ===== */
@@ -552,6 +556,11 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
   applyUi();
   render();
 })();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+}
 </script>
 </body>
 </html>
