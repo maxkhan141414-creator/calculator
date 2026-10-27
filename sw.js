@@ -1,6 +1,6 @@
 // Offline support: the whole app is cached on first visit.
 // When you change any file, increase the number in CACHE (v1 -> v2).
-var CACHE = "word-calc-v1";
+var CACHE = "word-calc-v2";
 var FILES = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "privacy.html"];
 
 self.addEventListener("install", function(e){
