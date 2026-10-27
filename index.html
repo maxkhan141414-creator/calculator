@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<script>
+// पहली स्क्रीन बनने से पहले ही सही थीम लगाना, ताकि रंग चमके नहीं
+(function(){
+  try {
+    var m = localStorage.getItem("shabd_calc_theme");
+    var dark = m === "dark" || (m !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  } catch(e){}
+})();
+</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1d2e58">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -65,6 +76,14 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
 .key.eq:active{box-shadow:0 1px 0 var(--eq-edge)}
 .key.zero{grid-column:1 / span 2}
 @media (prefers-reduced-motion:no-preference){.key{transition:transform .07s,box-shadow .07s}}
+
+/* ===== खुलते समय की एनिमेशन ===== */
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  .panel{animation:rise .45s cubic-bezier(.2,.8,.2,1) backwards}
+  .key{animation:pop .38s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i, 0) * 14ms + 110ms)}
+}
 
 /* ===== नीचे से खुलने वाले पैनल (सेटिंग्स और हिस्ट्री) ===== */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
@@ -552,6 +571,7 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
     on(id, function(ev){ if (ev.target === $(id)) sheet(id, false); });
   });
 
+  Array.prototype.forEach.call(document.querySelectorAll(".key"), function(k, i){ k.style.setProperty("--i", i); });
   applyTheme();
   applyUi();
   render();
