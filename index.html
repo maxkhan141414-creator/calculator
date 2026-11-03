@@ -3,9 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d2e58">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="color-scheme" content="light dark">
+<!-- PDF बनाने के लिए लाइब्रेरी -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-// पहली स्क्रीन बनने से पहले ही सही थीम लगाना, ताकि रंग चमके नहीं
 (function(){
   try {
     var m = localStorage.getItem("shabd_calc_theme");
@@ -14,138 +19,227 @@
   } catch(e){}
 })();
 </script>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1d2e58">
-<link rel="icon" type="image/png" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>शब्द कैलकुलेटर</title>
+<title>Word Calculator</title>
 <style>
-/* ===== रंग (हल्की थीम डिफ़ॉल्ट, गहरी थीम नीचे) ===== */
 :root{
-  --bg:#e8ecf4;
-  --p1:#ffffff; --p2:#eef2f9; --panel-text:#000000; --panel-sub:#55627f; --gold:#8a4b00;
+  --bg:#e8ecf4; --p1:#ffffff; --p2:#eef2f9; --panel-text:#000000; --panel-sub:#55627f; --gold:#8a4b00;
   --panel-line:#d3dbea; --panel-shadow:0 8px 20px rgba(30,50,100,.13); --soft:rgba(10,20,50,.07);
-  --key:#ffffff; --key-text:#14213d; --edge:#c5cee0;
-  --op:#d9e1f1; --op-text:#14213d; --op-edge:#b8c4de;
+  --key:#ffffff; --key-text:#14213d; --edge:#c5cee0; --op:#d9e1f1; --op-text:#14213d; --op-edge:#b8c4de;
+  --action:#e2e8f0; --action-text:#3b4b6b;
   --clear:#fde2de; --clear-text:#a1281c; --clear-edge:#f0bdb6;
-  --eq:#f0a82a; --eq-text:#1a1203; --eq-edge:#b97b0c;
+  --eq:#f0a82a; --eq-text:#1a1203; --eq-edge:#b97b0c; --opc:#b45f06;
   color-scheme: light;
 }
 :root[data-theme="dark"]{
   --bg:#090d18; --p1:#1d2e58; --p2:#0f182f; --panel-text:#ffffff; --panel-sub:#a9b8d8; --gold:#ffd98a;
   --panel-line:#26376a; --panel-shadow:0 10px 24px rgba(0,0,0,.4); --soft:rgba(255,255,255,.09);
-  --key:#1b2542; --key-text:#f1f4fb; --edge:#0d1426;
-  --op:#27345a; --op-text:#f1f4fb; --op-edge:#141c36;
-  --clear:#472022; --clear-text:#ffb4aa; --clear-edge:#26100f;
+  --key:#1b2542; --key-text:#f1f4fb; --edge:#0d1426; --op:#27345a; --op-text:#f1f4fb; --op-edge:#141c36;
+  --action:#1d2a4a; --action-text:#a9b8d8;
+  --clear:#472022; --clear-text:#ffb4aa; --clear-edge:#26100f; --opc:#f0a82a;
   color-scheme: dark;
 }
-
-/* ===== आधार ===== */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
 body{
-  background:var(--bg);
-  font-family:"Noto Sans Devanagari","Mukta",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  color:var(--key-text);
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--bg); font-family:"Noto Sans Devanagari","Mukta",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--key-text); padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 .app{max-width:480px;height:100%;margin:0 auto;display:flex;flex-direction:column;padding:10px;gap:12px}
 button{touch-action:manipulation}
-button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
-
-/* ===== डिस्प्ले ===== */
-.panel{background:linear-gradient(160deg,var(--p1),var(--p2));color:var(--panel-text);border:1px solid var(--panel-line);border-radius:24px;padding:14px;box-shadow:var(--panel-shadow);display:flex;flex-direction:column;min-height:36%}
+button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
+.panel{background:linear-gradient(160deg,var(--p1),var(--p2));color:var(--panel-text);border:1px solid var(--panel-line);border-radius:24px;padding:14px;box-shadow:var(--panel-shadow);display:flex;flex-direction:column;min-height:42%}
 .top{display:flex;align-items:center;gap:8px}
 .round{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--soft);color:var(--panel-text);display:grid;place-items:center;cursor:pointer}
-.expr{flex:1;min-width:0;min-height:1.5em;text-align:right;color:var(--panel-sub);font-size:1.05rem;overflow-x:auto;white-space:nowrap}
-.main{margin:auto 0 8px;text-align:right;font-size:3rem;font-weight:700;line-height:1.15;word-break:break-all;letter-spacing:.5px}
-.main.m{font-size:2.2rem}
-.main.s{font-size:1.65rem}
-.words{min-height:2.4em;text-align:left;font-size:1.3rem;line-height:1.5;color:var(--gold);display:flex;align-items:center}
+.display-area{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:6px 2px}
+.expr,.main{width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
+.expr::-webkit-scrollbar,.main::-webkit-scrollbar{display:none}
+.expr{font-size:3.2rem;font-weight:500;line-height:1.15;cursor:text;color:var(--panel-text);user-select:text;-webkit-user-select:text;}
+.expr-in,.main-in{display:inline-block;min-width:100%;text-align:right}
+.ph{color:var(--panel-sub);opacity:.5}
+.ch.op,.ch.pc{color:var(--opc);font-weight:700}
+.cm{opacity:.9}
+.eqs{color:var(--opc)}
+.cur{display:inline-block;width:2px;height:1em;margin:0 1px 0 -1px;background:var(--opc);vertical-align:-.12em;border-radius:1px}
+@media (prefers-reduced-motion:no-preference){.cur{animation:blink 1.06s steps(1) infinite}}
+@keyframes blink{50%{opacity:0}}
+.main{font-size:2.2rem;font-weight:500;line-height:1.2;min-height:1.2em;color:var(--panel-sub)}
+.main.final{color:var(--panel-text);font-weight:700}
+.main.bad{color:var(--clear-text);font-size:1.3rem}
+.words-container{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;min-height:3em;border-top:1px solid var(--soft);padding-top:10px}
+.words{flex:1;min-width:0;text-align:left;font-size:1.25rem;line-height:1.4;color:var(--gold);font-weight:600;overflow-wrap:anywhere}
+.actions-small{display:flex;gap:5px;flex:none}
+.icon-btn{width:34px;height:34px;border:0;border-radius:50%;background:var(--soft);color:var(--panel-sub);display:grid;place-items:center;cursor:pointer;position:relative}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn.speaking svg{animation:speakAnim .6s ease-in-out infinite alternate}
+@keyframes speakAnim{0%{transform:scale(1);opacity:1}100%{transform:scale(1.25);opacity:.7}}
 
-/* ===== कीपैड ===== */
 .pad{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:10px}
-.key{border:0;border-radius:18px;background:var(--key);color:var(--key-text);font:inherit;font-size:1.7rem;font-weight:600;cursor:pointer;box-shadow:0 4px 0 var(--edge)}
+.key{border:0;border-radius:18px;background:var(--key);color:var(--key-text);font:inherit;font-size:1.6rem;font-weight:600;cursor:pointer;box-shadow:0 4px 0 var(--edge);display:flex;align-items:center;justify-content:center}
 .key:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
-.key.op{background:var(--op);color:var(--op-text);box-shadow:0 4px 0 var(--op-edge)}
+.key.op{background:var(--op);color:var(--op-text);box-shadow:0 4px 0 var(--op-edge);font-size:1.8rem}
 .key.op:active{box-shadow:0 1px 0 var(--op-edge)}
+.key.action{background:var(--action);color:var(--action-text);font-size:1.3rem}
 .key.clear{background:var(--clear);color:var(--clear-text);box-shadow:0 4px 0 var(--clear-edge)}
 .key.clear:active{box-shadow:0 1px 0 var(--clear-edge)}
-.key.eq{background:var(--eq);color:var(--eq-text);box-shadow:0 4px 0 var(--eq-edge);grid-column:4;grid-row:4 / span 2;font-size:2.2rem}
+.key.eq{background:var(--eq);color:var(--eq-text);box-shadow:0 4px 0 var(--eq-edge);font-size:2rem}
 .key.eq:active{box-shadow:0 1px 0 var(--eq-edge)}
-.key.zero{grid-column:1 / span 2}
-@media (prefers-reduced-motion:no-preference){.key{transition:transform .07s,box-shadow .07s}}
-
-/* ===== खुलते समय की एनिमेशन ===== */
 @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:no-preference){
   .panel{animation:rise .45s cubic-bezier(.2,.8,.2,1) backwards}
-  .key{animation:pop .38s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i, 0) * 14ms + 110ms)}
+  .key{animation:pop .38s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i, 0) * 14ms + 110ms);transition:transform .07s,box-shadow .07s}
 }
 
-/* ===== नीचे से खुलने वाले पैनल (सेटिंग्स और हिस्ट्री) ===== */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
 .overlay.open{display:flex}
-.sheet{background:var(--bg);width:100%;max-width:480px;max-height:85%;overflow-y:auto;border-radius:24px 24px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
-.sheet h2{margin:0;font-size:1.15rem}
-.group{display:flex;flex-direction:column;gap:8px}
-.label{color:var(--panel-sub);font-size:.9rem}
+.sheet{background:var(--bg);width:100%;max-width:480px;max-height:92%;overflow-y:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;box-shadow:0 -5px 20px rgba(0,0,0,.2)}
+.sheet h2{margin:0;font-size:1.25rem;color:var(--panel-text)}
+.group{display:flex;flex-direction:column;gap:8px;background:var(--p1);padding:12px;border-radius:16px;border:1px solid var(--panel-line)}
+.label{color:var(--panel-sub);font-size:.95rem;font-weight:600}
 .opts,.actions{display:flex;gap:8px}
-.opts button,.actions button,.wide{border:0;border-radius:14px;padding:13px 8px;font:inherit;font-size:1rem;cursor:pointer;background:var(--op);color:var(--op-text)}
+.opts button,.actions button,.wide{border:0;border-radius:12px;padding:12px 8px;font:inherit;font-size:1rem;font-weight:600;cursor:pointer;background:var(--op);color:var(--op-text)}
 .opts button,.actions button{flex:1}
-.opts button.on{background:var(--eq);color:var(--eq-text);font-weight:700}
+.opts button.on,.actions .primary{background:var(--eq);color:var(--eq-text)}
 .actions .danger{background:var(--clear);color:var(--clear-text)}
 .wide{width:100%}
+.empty{color:var(--panel-sub);text-align:center;padding:16px 0}
+.list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;max-height:46vh}
+.item{background:var(--key);border:0;border-radius:12px;padding:12px;text-align:right;font:inherit;color:var(--key-text);cursor:pointer;box-shadow:0 2px 0 var(--edge);width:100%}
+.item .ttl{display:flex;justify-content:space-between;gap:8px;color:var(--gold);font-weight:700;text-align:left}
+.item .tag{font-size:.7rem;background:var(--soft);color:var(--panel-sub);border-radius:6px;padding:2px 6px;align-self:center;flex:none}
+.item small{display:block;color:var(--panel-sub);font-size:.85rem;margin-top:3px;overflow-wrap:anywhere}
+.item b{font-size:1.2rem;color:var(--panel-text)}
+.bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bdate{color:var(--panel-sub);font-size:.8rem;text-align:right}
+.fld{width:100%;min-width:0;border:1px solid var(--panel-line);background:var(--p1);color:var(--panel-text);border-radius:12px;padding:11px 12px;font:inherit;font-size:1rem}
+.fld::placeholder{color:var(--panel-sub)}
+.frow{display:flex;gap:8px}
+.paper{background:var(--p1);border:1px solid var(--panel-line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px dashed var(--panel-line)}
+.bnum{flex:0 0 42%;min-width:0;border:1px solid var(--panel-line);border-radius:10px;padding:5px 10px;text-align:right;background:var(--bg);color:var(--panel-text);overflow:hidden}
+.bnum b{font-size:1.1rem}
+.bnum .sg{color:var(--opc);margin-right:4px;font-weight:700}
+.bnum .sg.neg{color:var(--clear-text)}
+.bnum small{display:block;color:var(--panel-sub);font-size:.72rem;overflow:hidden;text-overflow:ellipsis}
+.bdel{flex:none;width:32px;height:32px;border:0;border-radius:50%;background:var(--clear);color:var(--clear-text);font-size:1.25rem;line-height:1;cursor:pointer}
+.bname{flex:1;min-width:0;padding:8px 10px;font-size:.95rem}
 
-/* ===== हिस्ट्री की सूची ===== */
-.list{overflow-y:auto;display:flex;flex-direction:column;gap:8px}
-.item{background:var(--key);border:0;border-radius:14px;padding:10px 14px;text-align:right;font:inherit;color:var(--key-text);cursor:pointer;box-shadow:0 2px 0 var(--edge)}
-.item small{display:block;color:var(--panel-sub);font-size:.85rem}
-.item b{font-size:1.25rem}
-.empty{color:var(--panel-sub);text-align:center;padding:20px 0}
+/* Total Box Layout */
+.total-wrapper { display:flex; flex-direction:column; align-items:center; margin-top:8px; }
+.total-label { font-weight:700; font-size:1rem; color:var(--panel-text); margin-bottom:4px; align-self: flex-start; }
+.total-content { display:flex; align-items:center; justify-content:space-between; width:100%; background:var(--bg); border:1px solid var(--panel-line); border-radius:10px; padding:6px 12px; }
+.total-num { flex:1; text-align:center; font-weight:700; font-size:1.3rem; color:var(--panel-text); }
+.total-words { flex:0 0 auto; text-align:right; color:var(--gold); font-weight:600; font-size:0.9rem; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sheet .actions{position:sticky;bottom:0}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);transform:translateX(-50%) translateY(10px);background:#14213d;color:#fff;padding:10px 16px;border-radius:999px;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:300;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.bill-actions-top { display: flex; gap: 8px; margin-bottom: 4px; align-items:center; }
+.bill-actions-top button { padding: 10px; font-size: 0.9rem; font-weight: 600; border-radius: 10px; border: 1px solid var(--panel-line); background: var(--op); color: var(--op-text); cursor: pointer; display:flex; justify-content:center; align-items:center; gap:4px;}
+.bill-actions-top button.pdf-btn-main { flex: 1; background: var(--eq); color: var(--eq-text); border:none; }
+.bill-actions-top button.x-btn { flex: 0 0 44px; padding:0; height: 40px; border-radius: 50%; background: var(--clear); color: var(--clear-text); font-size:1.2rem; border:none; }
+
+.addItemBtn { flex: none; width: 34px; height: 34px; border-radius: 8px; background: var(--eq); color: var(--eq-text); border: 0; font-size: 1.2rem; font-weight: 700; cursor: pointer; display:grid; place-items:center; }
+
+/* Fullscreen PDF Preview Overlay */
+.pdf-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; z-index: 100; }
+.pdf-overlay.open { display: flex; }
+.pdf-topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #1d2e58; color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+.pdf-topbar-title { font-size: 1.1rem; font-weight: 600; }
+.pdf-topbar-actions { display: flex; gap: 8px; align-items: center; }
+.pdf-icon-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; transition: 0.2s;}
+.pdf-icon-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.3); }
+.pdf-icon-btn.close { background: var(--clear); color: var(--clear-text); }
+.pdf-body { flex: 1; overflow-y: auto; padding: 20px 10px; display: flex; justify-content: center; background: #525659; }
+.pdf-page-wrapper { background: #fff; width: 100%; max-width: 680px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border-radius: 4px; }
+
+/* Premium & Clean PDF Content Styling */
+.pdf-content { background: #fff; color: #222; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; box-sizing: border-box; }
+
+/* Modern Header Box */
+.pdf-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1d2e58; padding: 18px 20px; margin-bottom: 20px; background: linear-gradient(135deg, #f8f9fc 0%, #edf2f9 100%); border-radius: 12px; box-shadow: inset 0 0 0 1px #d3dbea; }
+.pdf-shop-title { font-size: 2rem; font-weight: 900; color: #1d2e58; margin: 0; line-height: 1.1; letter-spacing: -0.5px; }
+.pdf-meta-box { text-align: right; }
+.pdf-badge { display: inline-block; background: #1d2e58; color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+.pdf-date-text { font-size: 0.85rem; color: #444; font-weight: 600; line-height: 1.35; }
+
+.pdf-details { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.95rem; background: #f4f6f9; padding: 12px 15px; border-radius: 6px; border: 1px solid #e1e6ed; }
+.pdf-details div { width: 48%; }
+.pdf-details b { color: #1d2e58; display: block; margin-bottom: 3px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;}
+.pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.pdf-table th { background: #1d2e58; color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 0.9rem; }
+.pdf-table th:last-child, .pdf-table td:last-child { text-align: right; }
+.pdf-table td { padding: 10px 12px; border-bottom: 1px solid #e9ecef; font-size: 0.95rem; vertical-align: middle; }
+.pdf-table tr:nth-child(even) { background: #fbfbfb; }
+.pdf-total-section { display: flex; flex-direction: column; align-items: flex-end; border-top: 2px solid #1d2e58; padding-top: 15px; }
+.pdf-total-row { display: flex; justify-content: space-between; width: 280px; font-size: 1.3rem; font-weight: 800; color: #1d2e58; margin-bottom: 6px; }
+.pdf-words-row { font-size: 0.95rem; color: #555; font-style: italic; text-align: right; width: 100%; margin-bottom: 30px; }
+.pdf-footer { text-align: center; font-size: 0.8rem; color: #888; border-top: 1px solid #eee; padding-top: 12px; margin-top: auto; letter-spacing: 0.3px; }
+
+/* PDF Preview Editable Elements */
+.pdf-editable-input { border: 1px dashed #ccc; background: transparent; padding: 4px 6px; font: inherit; color: inherit; width: 100%; border-radius: 4px; box-sizing: border-box; }
+.pdf-editable-input:focus { border: 1px solid #1d2e58; background: #fff; outline: none; }
+.pdf-editable-num { text-align: right; border: 1px dashed #ccc; background: transparent; padding: 4px 6px; font: inherit; color: inherit; width: 110px; border-radius: 4px; box-sizing: border-box; }
+.pdf-editable-num:focus { border: 1px solid #1d2e58; background: #fff; outline: none; }
+
+.pdf-del-btn { border:0; background: #fde2de; color: #a1281c; border-radius: 50%; width:24px; height:24px; font-weight:bold; cursor:pointer; display:inline-grid; place-items:center; line-height:1; }
+.pdf-add-row-btn { border:1px dashed #1d2e58; background: #eef2f9; color:#1d2e58; padding: 6px 12px; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600; margin-top: 8px; display:inline-flex; align-items:center; gap:4px; }
+.pdf-add-row-btn:hover { background: #d9e1f1; }
+.no-print-action { display: table-cell; }
 </style>
 </head>
 <body>
 <div class="app">
-  <section class="panel" aria-live="polite">
+  <section class="panel">
     <div class="top">
       <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="round" id="themeBtn" type="button" data-ia="theme"></button>
-      <div class="expr" id="expr"></div>
     </div>
-    <div class="main" id="main">0</div>
-    <div class="words" id="words"></div>
+
+    <div class="display-area">
+      <div class="expr" id="expr" contenteditable="true" spellcheck="false"><div class="expr-in" id="exprIn"></div></div>
+      <div class="main" id="main"><div class="main-in" id="mainIn"></div></div>
+    </div>
+
+    <div class="words-container">
+      <div class="words" id="words" aria-live="polite"></div>
+      <div class="actions-small">
+        <button class="icon-btn" id="billBtn" type="button" data-ia="billBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></button>
+        <button class="icon-btn" id="speakBtn" type="button" data-ia="speakBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+        <button class="icon-btn" id="copyBtn" type="button" data-ia="copyBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      </div>
+    </div>
   </section>
 
   <section class="pad" id="pad">
-    <button class="key clear" data-k="C" type="button">C</button>
-    <button class="key op" data-k="B" type="button" data-ia="erase">⌫</button>
+    <button class="key clear" data-k="C" type="button">AC</button>
+    <button class="key action" data-k="B" type="button" data-ia="erase">⌫</button>
+    <button class="key action" data-k="%" type="button">%</button>
     <button class="key op" data-k="/" type="button">÷</button>
-    <button class="key op" data-k="*" type="button">×</button>
 
     <button class="key" data-k="7" type="button">7</button>
     <button class="key" data-k="8" type="button">8</button>
     <button class="key" data-k="9" type="button">9</button>
-    <button class="key op" data-k="-" type="button">−</button>
+    <button class="key op" data-k="*" type="button">×</button>
 
     <button class="key" data-k="4" type="button">4</button>
     <button class="key" data-k="5" type="button">5</button>
     <button class="key" data-k="6" type="button">6</button>
-    <button class="key op" data-k="+" type="button">+</button>
+    <button class="key op" data-k="-" type="button">−</button>
 
     <button class="key" data-k="1" type="button">1</button>
     <button class="key" data-k="2" type="button">2</button>
     <button class="key" data-k="3" type="button">3</button>
-    <button class="key eq" data-k="=" type="button">=</button>
+    <button class="key op" data-k="+" type="button">+</button>
 
-    <button class="key zero" data-k="0" type="button">0</button>
+    <button class="key action" data-k="+/-" type="button">+/−</button>
+    <button class="key" data-k="0" type="button">0</button>
     <button class="key" data-k="." type="button">.</button>
+    <button class="key eq" data-k="=" type="button">=</button>
   </section>
 </div>
 
-<!-- सेटिंग्स -->
 <div class="overlay" id="settings">
   <div class="sheet" role="dialog" data-ia="settings">
     <h2 data-i="settings"></h2>
@@ -169,7 +263,6 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
   </div>
 </div>
 
-<!-- हिस्ट्री -->
 <div class="overlay" id="hist">
   <div class="sheet" role="dialog" data-ia="history">
     <h2 data-i="histTitle"></h2>
@@ -181,52 +274,99 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
   </div>
 </div>
 
+<!-- बिल पेज -->
+<div class="overlay" id="bill">
+  <div class="sheet" role="dialog" data-ia="billTitle">
+    <div class="bhead"><h2 data-i="billTitle"></h2></div>
+    <div class="bill-actions-top">
+      <button type="button" id="billPdfBtn" class="pdf-btn-main">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        PDF Preview
+      </button>
+      <button type="button" class="x-btn" id="billCloseBtn">✕</button>
+    </div>
+    
+    <input class="fld" id="billShop" type="text" maxlength="50" autocomplete="off" data-ph="shopPh">
+    <div class="frow">
+      <input class="fld" id="billSeller" type="text" maxlength="40" autocomplete="off" data-ph="sellerPh">
+      <input class="fld" id="billCustomer" type="text" maxlength="40" autocomplete="off" data-ph="customerPh">
+    </div>
+    <div class="paper">
+      <div id="billItems"></div>
+      <div class="total-wrapper">
+        <div class="total-label" data-i="total"></div>
+        <div class="total-content">
+          <div class="total-num" id="billTotal">0</div>
+          <div class="total-words" id="billWords">शून्य</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- प्रीमियम PDF Preview -->
+<div class="pdf-overlay" id="pdfOverlay">
+  <div class="pdf-topbar">
+    <div class="pdf-topbar-title">Bill Preview</div>
+    <div class="pdf-topbar-actions">
+      <button class="pdf-icon-btn" id="pdfShareAction" title="Share Bill">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+      </button>
+      <button class="pdf-icon-btn" id="pdfDownloadAction" title="Download PDF">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </button>
+      <button class="pdf-icon-btn" id="pdfPrintAction" title="Print Bill">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      </button>
+      <button class="pdf-icon-btn close" id="pdfCloseAction" title="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+  </div>
+  <div class="pdf-body">
+    <div class="pdf-page-wrapper">
+      <div class="pdf-content" id="pdfContentToPrint"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
+  function el(tag, cls, text){ var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
 
-  // ===== 1. अंकों के शब्द (डेटा) =====
   var HI = ["शून्य","एक","दो","तीन","चार","पाँच","छह","सात","आठ","नौ","दस",
   "ग्यारह","बारह","तेरह","चौदह","पंद्रह","सोलह","सत्रह","अठारह","उन्नीस","बीस",
   "इक्कीस","बाईस","तेईस","चौबीस","पच्चीस","छब्बीस","सत्ताईस","अट्ठाईस","उनतीस","तीस",
   "इकतीस","बत्तीस","तैंतीस","चौंतीस","पैंतीस","छत्तीस","सैंतीस","अड़तीस","उनतालीस","चालीस",
-  "इकतालीस","बयालीस","तैंतालीस","चौवालीस","पैंतालीस","छियालीस","सैंतालीस","अड़तालीस","उनचास","पचास",
+  "इकतालीस","बयालीस","तैंतालीस","चौवालीस","पैंतालीस","छियालीस","सैंतीस","अड़तालीस","उनचास","पचास",
   "इक्यावन","बावन","तिरपन","चौवन","पचपन","छप्पन","सत्तावन","अट्ठावन","उनसठ","साठ",
   "इकसठ","बासठ","तिरसठ","चौंसठ","पैंसठ","छियासठ","सड़सठ","अड़सठ","उनहत्तर","सत्तर",
   "इकहत्तर","बहत्तर","तिहत्तर","चौहत्तर","पचहत्तर","छिहत्तर","सतहत्तर","अठहत्तर","उनासी","अस्सी",
   "इक्यासी","बयासी","तिरासी","चौरासी","पचासी","छियासी","सतासी","अट्ठासी","नवासी","नब्बे",
   "इक्यानवे","बानवे","तिरानवे","चौरानवे","पचानवे","छियानवे","सत्तानवे","अट्ठानवे","निन्यानवे"];
-
   var ONES = ["Zero","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
   var TENS = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
   var EN = [];
-  for (var i = 0; i < 100; i++){
-    EN.push(i < 20 ? ONES[i] : TENS[Math.floor(i / 10)] + (i % 10 ? " " + ONES[i % 10] : ""));
-  }
+  for (var i = 0; i < 100; i++) EN.push(i < 20 ? ONES[i] : TENS[Math.floor(i / 10)] + (i % 10 ? " " + ONES[i % 10] : ""));
 
-  // इकाइयाँ भारतीय प्रणाली की हैं: हज़ार, लाख, करोड़ ...
   var DICT = {
-    hi: {nums: HI, units: ["हज़ार","लाख","करोड़","अरब","खरब","नील"], hundred: "सौ", point: ".", minus: "ऋण"},
-    en: {nums: EN, units: ["Thousand","Lakh","Crore","Arab","Kharab","Neel"], hundred: "Hundred", point: ".", minus: "Minus"}
+    hi: {nums: HI, units: ["हज़ार","लाख","करोड़","अरब","खरब","नील"], hundred: "सौ", minus: "ऋण", point: "दशमलव"},
+    en: {nums: EN, units: ["Thousand","Lakh","Crore","Arab","Kharab","Neel"], hundred: "Hundred", minus: "Minus", point: "point"}
   };
-  var MAX_DIGITS = 15;
+  var MAX_DIGITS = 15, MAX_LEN = 120, MAX_REC = 100;
 
-  // ===== 2. संख्या को हिस्सों, शब्दों और कॉमा में बदलना =====
-  // "23540000" -> [{v:2,u:2}, {v:35,u:1}, {v:40,u:0}]   (u: इकाई का क्रम, "h" = सौ, "" = सादा)
   function splitParts(whole){
-    var out = [], groups = [];
-    var last3 = whole.slice(-3), rest = whole.slice(0, -3);
+    var out = [], groups = [], last3 = whole.slice(-3), rest = whole.slice(0, -3);
     while (rest.length){ groups.unshift(rest.slice(-2)); rest = rest.slice(0, -2); }
-    groups.forEach(function(g, k){
-      var v = parseInt(g, 10);
-      if (v) out.push({v: v, u: groups.length - 1 - k});
-    });
+    groups.forEach(function(g, k){ var v = parseInt(g, 10); if (v) out.push({v: v, u: groups.length - 1 - k}); });
     var t = parseInt(last3, 10), h = Math.floor(t / 100), r = t % 100;
     if (h) out.push({v: h, u: "h"});
     if (r) out.push({v: r, u: ""});
     return out;
   }
-  // 100 से छोटी संख्या शब्द में ("सत्तावन"), बड़ी अंक + इकाई में ("1 लाख 50 हज़ार")
   function wordsOf(parts, d){
     if (!parts.length) return d.nums[0];
     if (parts.length === 1 && parts[0].u === "") return d.nums[parts[0].v];
@@ -239,98 +379,156 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
     if (whole.length <= 3) return whole;
     return whole.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + whole.slice(-3);
   }
-  // "-1500.25" -> {neg, whole, frac, dot}
   function splitNum(value){
-    var neg = value.charAt(0) === "-", abs = neg ? value.slice(1) : value, dot = abs.indexOf(".");
+    var neg = String(value).charAt(0) === "-", abs = neg ? String(value).slice(1) : String(value), dot = abs.indexOf(".");
     var whole = dot === -1 ? abs : abs.slice(0, dot);
-    return {
-      neg: neg,
-      whole: whole === "" ? "0" : whole.replace(/^0+(?=\d)/, ""),
-      frac: dot === -1 ? "" : abs.slice(dot + 1),
-      dot: dot !== -1
-    };
+    return {neg: neg, whole: whole === "" ? "0" : whole.replace(/^0+(?=\d)/, ""), frac: dot === -1 ? "" : abs.slice(dot + 1), dot: dot !== -1};
   }
   function formatNum(n){ return (n.neg ? "−" : "") + indianComma(n.whole) + (n.dot ? "." + n.frac : ""); }
+  function prettyExpr(e){
+    return e.replace(/\d+(\.\d*)?/g, function(m){ var p = m.split("."); return indianComma(p[0]) + (p.length > 1 ? "." + p[1] : ""); })
+            .replace(/\*/g, "×").replace(/\//g, "÷").replace(/-/g, "−");
+  }
+  function wordsLine(value, d){
+    var n = splitNum(value), text = wordsOf(splitParts(n.whole), d);
+    if (n.frac) text += " . " + n.frac;
+    return (n.neg ? d.minus + " " : "") + text;
+  }
 
-  // ===== 3. गणना (बिना eval) =====
   function evaluate(str){
-    var tokens = str.match(/\d+\.?\d*|\.\d+|[+\-*\/]/g) || [], i = 0;
+    var tokens = str.match(/\d+\.?\d*|\.\d+|[+\-*\/%]/g) || [], i = 0;
+    function isNum(t){ return t !== undefined && /^[\d.]/.test(t); }
     function factor(){
       var t = tokens[i++];
       if (t === "-") return -factor();
-      if (t === undefined) throw new Error("bad");
-      return parseFloat(t);
+      if (!isNum(t)) throw new Error("bad");
+      var v = parseFloat(t);
+      while (tokens[i] === "%"){ v /= 100; i++; }
+      return v;
     }
     function term(){
       var v = factor();
       while (tokens[i] === "*" || tokens[i] === "/"){
         var op = tokens[i++], r = factor();
-        if (op === "*") v *= r;
-        else { if (r === 0) throw new Error("div0"); v /= r; }
+        if (op === "*") v *= r; else { if (r === 0) throw new Error("div0"); v /= r; }
       }
       return v;
     }
     function sum(){
       var v = term();
       while (tokens[i] === "+" || tokens[i] === "-"){
-        var op = tokens[i++], r = term();
+        var op = tokens[i++], r;
+        if (isNum(tokens[i]) && tokens[i + 1] === "%" && (tokens[i + 2] === undefined || tokens[i + 2] === "+" || tokens[i + 2] === "-")){
+          r = v * parseFloat(tokens[i]) / 100; i += 2;
+        } else r = term();
         v = op === "+" ? v + r : v - r;
       }
       return v;
     }
     var res = sum();
+    if (i < tokens.length) throw new Error("bad");
     if (!isFinite(res)) throw new Error("inf");
     return res;
   }
   function toPlain(n){
-    var r = parseFloat(n.toPrecision(12));
-    if (Math.abs(r) >= 1e15) throw new Error("big");
-    var s = String(r);
-    return s.indexOf("e") === -1 ? s : r.toFixed(10).replace(/0+$/, "").replace(/\.$/, "");
+    if (Math.abs(n) >= 1e15) throw new Error("big");
+    var s = String(n);
+    if (s.indexOf("e") !== -1) {
+      let parts = s.split('e');
+      let num = parseFloat(parts[0]);
+      let exp = parseInt(parts[1]);
+      return num.toFixed(Math.max(0, -exp)).replace(/\.?0+$/, "");
+    }
+    return s;
+  }
+  function errKey(ex){ return ex && ex.message === "div0" ? "eDiv" : (ex && ex.message === "big" ? "eBig" : "eBad"); }
+  function trimOps(e){ return e.replace(/[+\-*\/]+$/, ""); }
+
+  function parseTerms(e){
+    var raw = [], sign = "+", start = 0, c = 0;
+    if (e.charAt(0) === "-"){ sign = "-"; start = 1; }
+    c = start;
+    for (var i = start; i <= e.length; i++){
+      var ch = e.charAt(i);
+      if (i === e.length || ((ch === "+" || ch === "-") && /[0-9%]/.test(e.charAt(i - 1)))){
+        raw.push({s: sign, x: e.slice(c, i)});
+        sign = ch; c = i + 1;
+      }
+    }
+    var running = 0;
+    return raw.map(function(t, k){
+      var pm = /^(\d+\.?\d*|\.\d+)%$/.exec(t.x);
+      var val = (pm && k > 0) ? running * parseFloat(pm[1]) / 100 : evaluate(t.x);
+      running += t.s === "-" ? -val : val;
+      return {s: t.s, x: t.x, v: toPlain(val), n: ""};
+    });
+  }
+  function itemsTotal(items){
+    var s = 0;
+    if(items && items.length){
+      items.forEach(function(it){
+        var numVal = parseFloat(it.v) || 0;
+        s += (it.s === "-" ? -1 : 1) * numVal;
+      });
+    }
+    try { return toPlain(s); } catch(e){ return "0"; }
   }
 
-  // ===== 4. स्टोरेज और सेव की हुई सेटिंग =====
-  var HKEY = "shabd_calc_history", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui", TKEY = "shabd_calc_theme", SKEY = "shabd_calc_sound";
+  var HKEY = "shabd_calc_history_v3", STKEY = "shabd_calc_state", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui",
+      TKEY = "shabd_calc_theme", SKEY = "shabd_calc_sound", SHOPKEY = "shabd_calc_shop", SELLERKEY = "shabd_calc_seller";
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
 
-  var records = [];                                   // हिस्ट्री
-  try { records = JSON.parse(lsGet(HKEY) || "[]"); } catch(e){}
+  function validRecord(h){
+    return h && typeof h.e === "string" && typeof h.r === "string" && (h.k !== "bill" || Array.isArray(h.items));
+  }
+  var records = [];
+  try { records = JSON.parse(lsGet(HKEY) || lsGet("shabd_calc_history_named") || lsGet("shabd_calc_history") || "[]"); } catch(e){}
   if (!Array.isArray(records)) records = [];
-  records = records.filter(function(h){ return h && typeof h.e === "string" && typeof h.r === "string"; });
-  function saveRecords(){ lsSet(HKEY, JSON.stringify(records.slice(0, 50))); }
+  records = records.filter(validRecord);
+  function saveRecords(){ lsSet(HKEY, JSON.stringify(records.slice(0, MAX_REC))); }
 
-  var lang = lsGet(LKEY);                             // शब्द: hi / en / off
+  var lang = lsGet(LKEY);
   if (lang !== "hi" && lang !== "en" && lang !== "off") lang = "hi";
-  var uiLang = lsGet(UKEY);                           // ऐप के बाकी लिखे की भाषा: hi / en
+  var uiLang = lsGet(UKEY);
   if (uiLang !== "hi" && uiLang !== "en") uiLang = lang === "en" ? "en" : "hi";
-  var themeMode = lsGet(TKEY);                        // light / dark / auto (फ़ोन के हिसाब से)
+  var themeMode = lsGet(TKEY);
   if (themeMode !== "light" && themeMode !== "dark") themeMode = "auto";
   var soundOn = lsGet(SKEY) !== "off";
-  var storageOk = lsSet("shabd_calc_test", "1");      // व्यूअर में स्टोरेज चालू है या नहीं
+  var storageOk = lsSet("shabd_calc_test", "1");
   try { localStorage.removeItem("shabd_calc_test"); } catch(e){}
 
-  // ===== 5. ऐप की भाषा (हिंदी / English) और तारीख़ =====
   var I18N = {
-    hi: {title:"शब्द कैलकुलेटर", settings:"सेटिंग्स", erase:"मिटाएँ", theme:"थीम बदलें", history:"हिस्ट्री",
+    hi: {title:"शब्द कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
+         billBtn:"बिल बनाएं / नाम के साथ सेव करें", speakBtn:"बोलकर सुनें", copyBtn:"कॉपी करें",
          langLabel:"भाषा (शब्द कैसे दिखें)", off:"बंद करें", soundLabel:"बटन की आवाज़", soundOn:"चालू", soundOff:"बंद",
-         viewHist:"हिस्ट्री देखें", close:"बंद करें", histTitle:"पिछली गणनाएँ", clearHist:"हिस्ट्री साफ़ करें",
-         noHist:"अभी कोई गणना नहीं है।", noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है, इसलिए बंद होने पर हिस्ट्री मिट सकती है।",
-         err:"त्रुटि", eDiv:"0 से भाग नहीं हो सकता", eBig:"संख्या बहुत बड़ी है", eBad:"गणना सही नहीं है"},
-    en: {title:"Word Calculator", settings:"Settings", erase:"Erase", theme:"Switch theme", history:"History",
+         viewHist:"हिस्ट्री देखें", close:"बंद करें", histTitle:"पिछले हिसाब", clearHist:"हिस्ट्री साफ़ करें",
+         noHist:"अभी कोई हिसाब नहीं है।", noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है, इसलिए बंद होने पर हिस्ट्री मिट सकती है।",
+         err:"त्रुटि", eDiv:"0 से भाग नहीं हो सकता", eBig:"संख्या बहुत बड़ी है", eBad:"हिसाब सही नहीं है",
+         copied:"कॉपी हो गया", copyFail:"कॉपी नहीं हो पाया", pasted:"पेस्ट हो गया", notNum:"यह संख्या या हिसाब नहीं लगता",
+         speakNo:"इस फ़ोन में बोलने की सुविधा नहीं है", saved:"सेव हो गया", needExpr:"पहले कोई हिसाब लिखिए",
+         billTitle:"बिल / हिसाब", shopPh:"दुकान का नाम (चाहें तो)", sellerPh:"विक्रेता का नाम", customerPh:"ग्राहक का नाम",
+         itemPh:"सामान का नाम", total:"कुल", save:"सेव करें", remove:"यह लाइन हटाएँ", noLines:"कोई लाइन नहीं बची।", billTag:"बिल", lines:"लाइन"},
+    en: {title:"Word Calculator", settings:"Settings", theme:"Switch theme", history:"History", erase:"Erase",
+         billBtn:"Make bill / save with names", speakBtn:"Listen", copyBtn:"Copy",
          langLabel:"Language (how words appear)", off:"Off", soundLabel:"Button sound", soundOn:"On", soundOff:"Off",
          viewHist:"View history", close:"Close", histTitle:"Past calculations", clearHist:"Clear history",
          noHist:"No calculations yet.", noStore:"Storage is unavailable in this view, so history may be lost when it closes.",
-         err:"Error", eDiv:"Cannot divide by 0", eBig:"Number is too large", eBad:"Invalid calculation"}
+         err:"Error", eDiv:"Cannot divide by 0", eBig:"Number is too large", eBad:"Invalid calculation",
+         copied:"Copied", copyFail:"Could not copy", pasted:"Pasted", notNum:"That does not look like a number or sum",
+         speakNo:"Speech is not available on this phone", saved:"Saved", needExpr:"Enter a calculation first",
+         billTitle:"Bill / Statement", shopPh:"Shop name (optional)", sellerPh:"Seller name", customerPh:"Customer name",
+         itemPh:"Item name", total:"Total", save:"Save", remove:"Remove this line", noLines:"No lines left.", billTag:"Bill", lines:"lines"}
   };
   function t(k){ return I18N[uiLang][k] || k; }
   function applyUi(){
-    document.documentElement.lang = uiLang;
-    document.title = t("title");
-    Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function(el){ el.textContent = t(el.getAttribute("data-i")); });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-ia]"), function(el){ el.setAttribute("aria-label", t(el.getAttribute("data-ia"))); });
+    document.documentElement.lang = uiLang; document.title = t("title");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function(n){ n.textContent = t(n.getAttribute("data-i")); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-ph]"), function(n){ n.placeholder = t(n.getAttribute("data-ph")); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-ia]"), function(n){
+      var s = t(n.getAttribute("data-ia")); n.setAttribute("aria-label", s); n.setAttribute("title", s);
+    });
   }
-
   var DAYS = {
     hi: ["रविवार","सोमवार","मंगलवार","बुधवार","गुरुवार","शुक्रवार","शनिवार"],
     en: ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
@@ -347,169 +545,628 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
     var part = h < 4 ? "रात" : h < 12 ? "सुबह" : h < 16 ? "दोपहर" : h < 20 ? "शाम" : "रात";
     return date + ", " + part + " " + h12 + ":" + mm + " बजे";
   }
-
-  // ===== 6. कैलकुलेटर की स्थिति और बटन =====
-  var expr = "", result = null, error = "";          // expr: लिखा हुआ, result: = के बाद का जवाब
-  var trail = [];                                     // इसी हिसाब के पूरे हो चुके पिछले चरण: [{e, r}]
-
-  function pretty(e){ return e.replace(/\*/g, "×").replace(/\//g, "÷").replace(/-/g, "−"); }
-  function lastOperand(){ return expr.match(/\d*\.?\d*$/)[0]; }
-
-  // एक पूरा हिसाब = हिस्ट्री में सिर्फ़ एक एंट्री (दोबारा आने पर वही एंट्री ऊपर आ जाती है)
-  function addRecord(e, r){
-    records = records.filter(function(h){ return !(h.e === e && h.r === r); });
-    records.unshift({e: e, r: r, t: Date.now()});
-    records = records.slice(0, 50);
-    saveRecords();
+  var toastTimer = null;
+  function toast(msg){
+    var n = $("toast"); n.textContent = msg; n.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ n.classList.remove("show"); }, 1800);
   }
-  // = के बाद उसी जवाब पर आगे का हिसाब चलाना (पिछला चरण trail में रखा जाता है)
+
+  var expr = "", cur = 0, result = null, err = "";
+  var trail = [];
+  var savedBillFor = "";
+
+  function insertAt(s){ expr = expr.slice(0, cur) + s + expr.slice(cur); cur += s.length; }
+  function numAround(p){
+    var s = p, e = p;
+    while (s > 0 && /[0-9.]/.test(expr.charAt(s - 1))) s--;
+    while (e < expr.length && /[0-9.]/.test(expr.charAt(e))) e++;
+    return [s, e];
+  }
   function continueFromResult(){
     trail.push({e: expr, r: result});
-    expr = result; result = null;
+    expr = result; cur = expr.length; result = null;
   }
-  // हिसाब पूरा होने पर (C दबने पर, या = के बाद नया हिसाब शुरू होने पर) पूरा हिसाब एक एंट्री में सेव करना
-  function endSession(){
-    var steps = trail.slice(), seg = null;
-    if (result !== null) seg = {e: expr, r: result};
-    else {
-      var x = expr.replace(/[+\-*\/]$/, "");
-      if (x && x !== "-"){ try { seg = {e: x, r: toPlain(evaluate(x))}; } catch(err){} }
+
+  function addAuto(e, r){
+    for (var i = 0; i < records.length; i++){
+      if (records[i].e === e && records[i].r === r){
+        if (records[i].k === "bill") return;
+        records.splice(i, 1); break;
+      }
     }
+    records.unshift({e: e, r: r, t: Date.now()});
+    records = records.slice(0, MAX_REC); saveRecords();
+  }
+  function endSession(){
+    var steps = trail.slice(), seg = null, key = result !== null ? expr : trimOps(expr);
+    if (key && key === savedBillFor){ trail = []; return; }
+    if (result !== null) seg = {e: expr, r: result};
+    else if (key && key !== "-"){ try { seg = {e: key, r: toPlain(evaluate(key))}; } catch(ex){} }
     if (seg){
-      var onlyNumber = /^-?\d*\.?\d+$/.test(seg.e);       // सिर्फ़ संख्या, कोई क्रिया नहीं
+      var onlyNumber = /^-?\d*\.?\d+$/.test(seg.e);
       if (!(onlyNumber && (steps.length || parseFloat(seg.e) === 0))) steps.push(seg);
     }
     if (steps.length){
-      addRecord(steps.map(function(z, i){ return i < steps.length - 1 ? z.e + " = " + z.r : z.e; }).join(", "), steps[steps.length - 1].r);
+      addAuto(steps.map(function(z, i){ return i < steps.length - 1 ? z.e + " = " + z.r : z.e; }).join(", "), steps[steps.length - 1].r);
     }
     trail = [];
   }
 
-  // चल रहा हिसाब फ़ोन में रखना, ताकि ऐप बंद होकर खुलने पर वही का वही मिले
-  var STKEY = "shabd_calc_state";
-  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, r: result, tr: trail})); }
+  function toggleSign(){
+    var nb = numAround(cur), s = nb[0];
+    if (s === nb[1]){ if (expr === ""){ expr = "-"; cur = 1; } return; }
+    var before = expr.slice(0, s), p = before.charAt(before.length - 1), pp = before.charAt(before.length - 2);
+    if (p === "+") expr = before.slice(0, -1) + "-" + expr.slice(s);
+    else if (p === "-"){
+      var binary = /[0-9%]/.test(pp);
+      expr = before.slice(0, -1) + (binary ? "+" : "") + expr.slice(s);
+      if (!binary) cur -= 1;
+    } else { expr = before + "-" + expr.slice(s); cur += 1; }
+  }
+
+  function press(k){
+    err = "";
+    if (/^[0-9.+\-*\/%]$/.test(k) && expr.length >= MAX_LEN) return;
+    if (/^[0-9.]$/.test(k)){
+      if (result !== null){ endSession(); expr = ""; cur = 0; result = null; }
+      if (expr.charAt(cur - 1) === "%") return;
+      var nb = numAround(cur), tok = expr.slice(nb[0], nb[1]);
+      if (k === "."){
+        if (tok.indexOf(".") !== -1) return;
+        insertAt(tok === "" ? "0." : ".");
+      } else {
+        if (tok.replace(".", "").length >= MAX_DIGITS) return;
+        if (tok === "0" && cur === nb[1]){ expr = expr.slice(0, nb[0]) + k + expr.slice(nb[1]); cur = nb[0] + 1; }
+        else insertAt(k);
+      }
+    } else if ("+-*/".indexOf(k) !== -1){
+      if (result !== null) continueFromResult();
+      var prev = expr.charAt(cur - 1);
+      if (cur === 0){ if (k === "-") insertAt("-"); }
+      else if (/[+\-*\/]/.test(prev)){
+        if (k === "-" && (prev === "*" || prev === "/")) insertAt("-");
+        else {
+          var s = cur;
+          while (s > 0 && /[+\-*\/]/.test(expr.charAt(s - 1))) s--;
+          var rep = (s === 0 && k !== "-") ? "" : k;
+          expr = expr.slice(0, s) + rep + expr.slice(cur); cur = s + rep.length;
+        }
+      } else insertAt(k);
+    } else if (k === "%"){
+      if (result !== null) continueFromResult();
+      if (/[0-9]/.test(expr.charAt(cur - 1))) insertAt("%");
+    } else if (k === "+/-"){
+      if (result !== null) continueFromResult();
+      toggleSign();
+    } else if (k === "B"){
+      if (result !== null){ result = null; cur = expr.length; }
+      if (cur > 0){ expr = expr.slice(0, cur - 1) + expr.slice(cur); cur--; }
+    } else if (k === "C"){
+      endSession(); expr = ""; cur = 0; result = null; savedBillFor = "";
+    } else if (k === "="){
+      if (result !== null) return;
+      var e = trimOps(expr);
+      if (!e || e === "-") return;
+      try { result = toPlain(evaluate(e)); expr = e; cur = e.length; }
+      catch(ex){ err = errKey(ex); }
+    }
+    render(); saveState();
+  }
+
+  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result, tr: trail})); }
   function loadState(){
     try {
       var st = JSON.parse(lsGet(STKEY) || "null");
-      if (st && /^[0-9+\-*\/.]*$/.test(st.x) && (st.r === null || /^-?[0-9.]+$/.test(st.r)) && Array.isArray(st.tr)){
+      if (st && typeof st.x === "string" && st.x.length <= MAX_LEN && /^[0-9+\-*\/.%]*$/.test(st.x) &&
+          (st.r === null || /^-?[0-9.]+$/.test(st.r)) && Array.isArray(st.tr)){
         expr = st.x; result = st.r;
+        cur = (typeof st.c === "number" && st.c >= 0 && st.c <= st.x.length) ? st.c : st.x.length;
         trail = st.tr.filter(function(z){ return z && typeof z.e === "string" && typeof z.r === "string"; });
       }
     } catch(e){}
   }
   loadState();
 
-  function press(k){
-    error = "";
-    if (/^[0-9.]$/.test(k)){
-      if (result !== null){ endSession(); expr = ""; result = null; }
-      var cur = lastOperand();
-      if (k === "."){
-        if (cur.indexOf(".") !== -1) return;
-        expr += cur === "" ? "0." : ".";
-      } else {
-        if (cur.replace(".", "").length >= MAX_DIGITS) return;
-        if (cur === "0") expr = expr.slice(0, -1);
-        expr += k;
-      }
-    } else if ("+-*/".indexOf(k) !== -1){
-      if (result !== null) continueFromResult();
-      if (expr === ""){
-        if (k === "-") expr = "-";
-      } else if (expr !== "-"){
-        if (/[+\-*\/]$/.test(expr)) expr = expr.slice(0, -1);
-        expr += k;
-      }
-    } else if (k === "B"){
-      if (result !== null) continueFromResult();
-      expr = expr.slice(0, -1);
-    } else if (k === "C"){
-      endSession();
-      expr = ""; result = null;
-    } else if (k === "="){
-      if (result !== null) return;
-      var e = expr.replace(/[+\-*\/]$/, "");
-      if (!e || e === "-") return;
-      try {
-        result = toPlain(evaluate(e));
-        expr = e;
-      } catch(err){
-        error = err.message === "div0" ? "eDiv" : (err.message === "big" ? "eBig" : "eBad");
-        expr = ""; result = null;
-      }
+  function chHtml(i){
+    var ch = expr.charAt(i), pre = (result === null && cur === i) ? '<span class="cur"></span>' : "";
+    var cls = /[0-9.]/.test(ch) ? "ch" : (ch === "%" ? "ch pc" : "ch op");
+    var shown = ch === "*" ? "×" : ch === "/" ? "÷" : ch === "-" ? "−" : ch;
+    return pre + '<span class="' + cls + '" data-i="' + i + '">' + shown + '</span>';
+  }
+  function exprHtml(){
+    if (expr === "" && result === null) return '<span class="cur"></span><span class="ph">0</span>';
+    var out = "", i = 0, n = expr.length;
+    while (i < n){
+      if (/[0-9.]/.test(expr.charAt(i))){
+        var tok = /^[0-9]*\.?[0-9]*/.exec(expr.slice(i))[0], dot = tok.indexOf("."), intLen = dot === -1 ? tok.length : dot;
+        for (var k = 0; k < tok.length; k++){
+          var rem = intLen - k;
+          if (k > 0 && k < intLen && (rem === 3 || (rem > 3 && rem % 2 === 1))) out += '<span class="cm">,</span>';
+          out += chHtml(i + k);
+        }
+        i += tok.length;
+      } else { out += chHtml(i); i++; }
     }
-    render();
-    saveState();
+    if (result === null && cur === n) out += '<span class="cur"></span>';
+    if (result !== null) out += '<span class="eqs"> =</span>';
+    return out;
+  }
+  function fit(box, maxRem, minRem){
+    var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    var size = maxRem * rem, min = minRem * rem;
+    box.style.fontSize = size + "px";
+    if (!box.clientWidth) return;
+    let iterations = 0;
+    while (box.scrollWidth > box.clientWidth + 1 && size > min && iterations < 20){ 
+      size -= 2; 
+      box.style.fontSize = size + "px"; 
+      iterations++;
+    }
+  }
+  function keepCursorVisible(){
+    var box = $("expr"), c = $("exprIn").querySelector(".cur");
+    if (result !== null || !c){ box.scrollLeft = box.scrollWidth; return; }
+    var cr = c.getBoundingClientRect(), br = box.getBoundingClientRect();
+    if (cr.left < br.left + 10) box.scrollLeft -= (br.left + 10 - cr.left);
+    else if (cr.right > br.right - 10) box.scrollLeft += cr.right - (br.right - 10);
   }
 
-  // ===== 7. डिस्प्ले =====
-  function currentValue(){
-    if (result !== null) return result;
-    var m = expr.replace(/[+\-*\/]$/, "").match(/(?:^-)?\d*\.?\d*$/)[0];
-    return m && m !== "-" ? m : "0";
+  function currentView(){
+    var key = trimOps(expr), body = key.replace(/^-/, "");
+    var hasOp = /[+\-*\/%]/.test(body), total = "";
+    if (result !== null){ total = result; hasOp = true; }
+    else if (key && key !== "-"){ try { total = toPlain(evaluate(key)); } catch(ex){ total = ""; } }
+    return {total: total, hasOp: hasOp, value: total !== "" ? total : "0"};
   }
   function render(){
-    var mainEl = $("main"), wordsEl = $("words");
-    if (error){
-      $("expr").textContent = "";
-      mainEl.textContent = t("err");
-      mainEl.className = "main";
-      wordsEl.textContent = t(error);
-      return;
+    var mainEl = $("main"), mainIn = $("mainIn"), words = $("words");
+    $("exprIn").innerHTML = exprHtml();
+    fit($("expr"), 3.2, 1.6);
+    keepCursorVisible();
+
+    var v = currentView();
+    if (err){
+      mainIn.textContent = t(err); mainEl.className = "main bad"; mainEl.style.fontSize = "";
+      words.textContent = ""; return;
     }
-    $("expr").textContent = pretty(expr) + (result !== null ? " =" : "");
+    mainIn.textContent = (v.hasOp && v.total !== "") ? formatNum(splitNum(v.total)) : "";
+    mainEl.className = "main" + (result !== null ? " final" : "");
+    fit(mainEl, 2.2, 1.3);
+    mainEl.scrollLeft = mainEl.scrollWidth;
+    words.textContent = lang === "off" ? "" : wordsLine(v.value, DICT[lang]);
+  }
+  $("expr").addEventListener("click", function(ev){
+    var spans = $("exprIn").querySelectorAll(".ch"), idx = expr.length;
+    for (var i = 0; i < spans.length; i++){
+      var r = spans[i].getBoundingClientRect();
+      if (ev.clientX < r.left + r.width / 2){ idx = parseInt(spans[i].getAttribute("data-i"), 10); break; }
+    }
+    if (result !== null) result = null;
+    cur = idx; err = ""; render(); saveState();
+  });
 
-    var n = splitNum(currentValue()), shown = formatNum(n);
-    mainEl.textContent = shown;
-    mainEl.className = "main" + (shown.length > 16 ? " s" : shown.length > 10 ? " m" : "");
+  $("expr").addEventListener("input", function(){
+    var text = $("expr").textContent || "";
+    var s = cleanPaste(text);
+    if (s){
+      expr = s; cur = expr.length; result = null; err = "";
+      render(); saveState(); toast(t("pasted"));
+    }
+  });
 
-    if (lang === "off"){ wordsEl.textContent = ""; return; }
-    var d = DICT[lang], text = wordsOf(splitParts(n.whole), d);
-    if (n.frac) text += " " + d.point + " " + n.frac;
-    if (n.neg) text = d.minus + " " + text;
-    wordsEl.textContent = text;
+  $("speakBtn").addEventListener("click", function(){
+    if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined"){ toast(t("speakNo")); return; }
+    var btn = $("speakBtn");
+    btn.classList.add("speaking");
+    var l = lang === "off" ? uiLang : lang, text = wordsLine(currentView().value, DICT[l]);
+    text = text.replace(" . ", " " + DICT[l].point + " ");
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = l === "hi" ? "hi-IN" : "en-IN"; u.rate = 0.9;
+    u.onend = function(){ btn.classList.remove("speaking"); };
+    u.onerror = function(){ btn.classList.remove("speaking"); };
+    window.speechSynthesis.speak(u);
+  });
+
+  function copyText(text){
+    function legacy(){
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+        var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok;
+      } catch(e){ return false; }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return legacy(); });
+    }
+    return Promise.resolve(legacy());
+  }
+  $("copyBtn").addEventListener("click", function(){
+    var v = currentView().value;
+    copyText(v).then(function(ok){ toast(ok ? t("copied") + ": " + formatNum(splitNum(v)) : t("copyFail")); });
+  });
+
+  function cleanPaste(text){
+    var s = String(text || "").replace(/\([^)]*\)/g, " ").replace(/[₹$€£,\s\u00a0]/g, "")
+      .replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–—]/g, "-")
+      .replace(/[०-९]/g, function(d){ return String(d.charCodeAt(0) - 0x0966); });
+    if (!s || /[^0-9.+\-*\/%]/.test(s) || /\d*\.\d*\./.test(s) || !/\d/.test(s)) return "";
+    return s.slice(0, 60);
   }
 
-  // ===== 8. हिस्ट्री पैनल =====
-  function note(list, text){
-    var div = document.createElement("div");
-    div.className = "empty";
-    div.textContent = text;
-    list.appendChild(div);
+  var bill = null;
+  function openBillFromExpr(){
+    var e = result !== null ? expr : trimOps(expr);
+    var items = [];
+    if (e && e !== "-"){
+      try { items = parseTerms(e); } catch(ex){}
+    }
+    bill = {id: null, shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items, key: e};
+    showBill();
   }
+  function openBillRecord(h){
+    bill = {id: h.t, shop: h.shop || "", seller: h.seller || "", customer: h.customer || "", key: "",
+            items: h.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: it.n || ""}; })};
+    showBill();
+  }
+  function showBill(){
+    $("billShop").value = bill.shop; $("billSeller").value = bill.seller; $("billCustomer").value = bill.customer;
+    renderBill(); sheet("bill", true);
+  }
+  function renderBill(){
+    var box = $("billItems"); box.innerHTML = "";
+    if (!bill.items.length) box.appendChild(el("div", "empty", t("noLines")));
+    
+    bill.items.forEach(function(it, i){
+      var row = el("div", "brow");
+      
+      var leftDiv = el("div", "bname-wrap");
+      leftDiv.style.cssText = "flex:1; display:flex; gap:6px; align-items:center;";
+      
+      var addBtn = el("button", "addItemBtn", "+");
+      addBtn.type = "button";
+      addBtn.title = "Add Item";
+      addBtn.addEventListener("click", function(){
+        bill.items.splice(i + 1, 0, {s: "+", x: "0", v: "0", n: ""});
+        renderBill();
+      });
+
+      var inp = el("input", "fld bname");
+      inp.type = "text"; inp.maxLength = 40; inp.autocomplete = "off";
+      inp.placeholder = t("itemPh"); inp.value = it.n || "";
+      inp.addEventListener("input", function(){ it.n = inp.value; });
+
+      leftDiv.appendChild(addBtn);
+      leftDiv.appendChild(inp);
+
+      var num = el("div", "bnum"), line = el("div", "");
+      line.appendChild(el("span", "sg" + (it.s === "-" ? " neg" : ""), it.s === "-" ? "−" : "+"));
+      line.appendChild(el("b", "", formatNum(splitNum(it.v))));
+      num.appendChild(line);
+      if (/[^0-9.]/.test(it.x)) num.appendChild(el("small", "", prettyExpr(it.x)));
+      
+      var del = el("button", "bdel", "×"); del.type = "button"; del.setAttribute("aria-label", t("remove"));
+      del.addEventListener("click", function(){ bill.items.splice(i, 1); renderBill(); });
+
+      row.appendChild(leftDiv);
+      row.appendChild(num);
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+
+    var total = itemsTotal(bill.items);
+    $("billTotal").textContent = formatNum(splitNum(total));
+    $("billWords").textContent = lang === "off" ? "" : wordsLine(total, DICT[lang]);
+    
+    autoSaveCurrentBill();
+  }
+
+  function autoSaveCurrentBill(){
+    if(!bill) return;
+    var rec = {
+      k: "bill", shop: $("billShop").value.trim(), seller: $("billSeller").value.trim(), customer: $("billCustomer").value.trim(),
+      items: bill.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: (it.n || "").trim()}; }),
+      e: bill.items.map(function(it, i){ return (i === 0 ? (it.s === "-" ? "-" : "") : it.s) + it.x; }).join(""),
+      r: itemsTotal(bill.items), t: bill.id || nextId()
+    };
+    records = records.filter(function(h){ return !(h.k === "bill" && h.t === rec.t); });
+    records.unshift(rec); records = records.slice(0, MAX_REC); saveRecords();
+    lsSet(SHOPKEY, rec.shop); lsSet(SELLERKEY, rec.seller);
+  }
+
+  $("billShop").addEventListener("input", autoSaveCurrentBill);
+  $("billSeller").addEventListener("input", autoSaveCurrentBill);
+  $("billCustomer").addEventListener("input", autoSaveCurrentBill);
+
+  function nextId(){
+    var m = Date.now();
+    records.forEach(function(h){ if (typeof h.t === "number" && h.t >= m) m = h.t + 1; });
+    return m;
+  }
+
+  /* PDF Preview Renderer */
+  function renderPdfPreviewContent(){
+    var container = $("pdfContentToPrint");
+    var shop = $("billShop").value.trim() || "Shabd Calculator Bill";
+    var seller = $("billSeller").value.trim();
+    var customer = $("billCustomer").value.trim();
+    var dateStr = fmtWhen((bill && bill.id) ? bill.id : Date.now());
+    var total = itemsTotal(bill ? bill.items : []);
+    var wordsTotal = lang === "off" ? "" : wordsLine(total, DICT[lang]);
+
+    var detailsHTML = "";
+    if (seller || customer) {
+      detailsHTML = `
+        <div class="pdf-details">
+          <div>${seller ? '<b>Seller Name</b><br>' + seller : ''}</div>
+          <div style="text-align:right;">${customer ? '<b>Customer Name</b><br>' + customer : ''}</div>
+        </div>
+      `;
+    }
+
+    var html = `
+      <div class="pdf-header-box">
+        <div>
+          <span class="pdf-badge">Official Bill</span>
+          <h1 class="pdf-shop-title">${shop}</h1>
+        </div>
+        <div class="pdf-meta-box">
+          <div class="pdf-date-text"><b>Date & Time:</b><br>${dateStr}</div>
+        </div>
+      </div>
+      ${detailsHTML}
+      <table class="pdf-table">
+        <thead>
+          <tr>
+            <th style="width: 30px; text-align:center;">#</th>
+            <th>Item Description</th>
+            <th style="text-align: right; width: 140px;">Amount</th>
+            <th class="no-print-action" style="width: 35px; text-align:center;"></th>
+          </tr>
+        </thead>
+        <tbody id="pdfTableBody">
+        </tbody>
+      </table>
+      <div style="margin-bottom:15px;" class="no-print-action">
+        <button type="button" class="pdf-add-row-btn" id="pdfAddNewRowBtn">+ Add New Line</button>
+      </div>
+      <div class="pdf-total-section">
+        <div class="pdf-total-row">
+          <span>Total:</span>
+          <span id="pdfTotalVal">${formatNum(splitNum(total))}</span>
+        </div>
+      </div>
+      <div class="pdf-words-row" id="pdfWordsVal">
+        In Words: ${wordsTotal}
+      </div>
+      <div class="pdf-footer">
+        Generated securely via Shabd Calculator
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+    var tbody = $("pdfTableBody");
+    tbody.innerHTML = "";
+
+    if (bill && bill.items) {
+      bill.items.forEach(function(it, idx){
+        var tr = document.createElement("tr");
+
+        var tdIdx = document.createElement("td");
+        tdIdx.style.textAlign = "center";
+        tdIdx.textContent = idx + 1;
+        tr.appendChild(tdIdx);
+
+        var tdName = document.createElement("td");
+        var nameInp = document.createElement("input");
+        nameInp.className = "pdf-editable-input";
+        nameInp.type = "text";
+        nameInp.value = it.n || ("Item " + (idx + 1));
+        nameInp.addEventListener("input", function(){
+          it.n = nameInp.value;
+          renderBill();
+        });
+        tdName.appendChild(nameInp);
+        tr.appendChild(tdName);
+
+        var tdVal = document.createElement("td");
+        tdVal.style.textAlign = "right";
+        var numInp = document.createElement("input");
+        numInp.className = "pdf-editable-num";
+        numInp.type = "text";
+        numInp.value = it.v;
+        numInp.addEventListener("input", function(){
+          var cleanVal = numInp.value.replace(/[^0-9.]/g, "");
+          it.v = cleanVal || "0";
+          it.x = it.v;
+          updatePdfTotals();
+          renderBill();
+        });
+        tdVal.appendChild(numInp);
+        tr.appendChild(tdVal);
+
+        var tdDel = document.createElement("td");
+        tdDel.className = "no-print-action";
+        tdDel.style.textAlign = "center";
+        var delBtn = document.createElement("button");
+        delBtn.className = "pdf-del-btn";
+        delBtn.textContent = "×";
+        delBtn.addEventListener("click", function(){
+          bill.items.splice(idx, 1);
+          renderPdfPreviewContent();
+          renderBill();
+        });
+        tdDel.appendChild(delBtn);
+        tr.appendChild(tdDel);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    $("pdfAddNewRowBtn").addEventListener("click", function(){
+      if(!bill) bill = { items: [] };
+      bill.items.push({s: "+", x: "0", v: "0", n: ""});
+      renderPdfPreviewContent();
+      renderBill();
+    });
+  }
+
+  function updatePdfTotals(){
+    var total = itemsTotal(bill ? bill.items : []);
+    var wordsTotal = lang === "off" ? "" : wordsLine(total, DICT[lang]);
+    if ($("pdfTotalVal")) $("pdfTotalVal").textContent = formatNum(splitNum(total));
+    if ($("pdfWordsVal")) $("pdfWordsVal").textContent = "In Words: " + wordsTotal;
+  }
+
+  function openPdfPreview(){
+    if(!bill || !bill.items || !bill.items.length){ toast(t("noLines")); return; }
+    autoSaveCurrentBill();
+    renderPdfPreviewContent();
+    $("pdfOverlay").classList.add("open");
+  }
+
+  $("billPdfBtn").addEventListener("click", openPdfPreview);
+  $("pdfCloseAction").addEventListener("click", function(){ $("pdfOverlay").classList.remove("open"); });
+
+  /* Reliable Share Button with Native Web Share, WhatsApp & Copy Fallbacks */
+  $("pdfShareAction").addEventListener("click", function(){
+    var total = itemsTotal(bill ? bill.items : []);
+    var shop = $("billShop").value.trim() || "Bill";
+    var text = "*" + shop + "*\nTotal: " + formatNum(splitNum(total)) + "\nGenerated via Shabd Calculator";
+    
+    if (navigator.share) {
+      navigator.share({
+        title: shop,
+        text: text
+      }).catch(function(err){
+        if(err.name !== "AbortError"){
+          var whatsappUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+          window.open(whatsappUrl, "_blank");
+        }
+      });
+    } else {
+      var whatsappUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+      var win = window.open(whatsappUrl, "_blank");
+      if(!win){
+        copyText(text).then(function(ok){
+          toast(ok ? "Bill details copied to clipboard!" : t("copyFail"));
+        });
+      }
+    }
+  });
+
+  /* PDF Download Function using html2pdf */
+  $("pdfDownloadAction").addEventListener("click", function(){
+    var element = document.getElementById('pdfContentToPrint');
+    
+    var noPrints = element.querySelectorAll(".no-print-action");
+    noPrints.forEach(function(el){ el.style.display = "none"; });
+
+    var opt = {
+      margin:       0.3,
+      filename:     'Bill_' + Date.now() + '.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    
+    toast("Downloading PDF...");
+    
+    if(typeof html2pdf !== "undefined") {
+      html2pdf().set(opt).from(element).save().then(function(){
+        noPrints.forEach(function(el){ el.style.display = ""; });
+      }).catch(function(){
+        noPrints.forEach(function(el){ el.style.display = ""; });
+        toast("Download failed");
+      });
+    } else {
+      noPrints.forEach(function(el){ el.style.display = ""; });
+      toast("PDF library not loaded");
+    }
+  });
+
+  /* Print Functionality */
+  $("pdfPrintAction").addEventListener("click", function(){
+    var element = document.getElementById('pdfContentToPrint');
+    var noPrints = element.querySelectorAll(".no-print-action");
+    noPrints.forEach(function(el){ el.style.display = "none"; });
+
+    var printContents = element.innerHTML;
+    var originalContents = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+      <style>
+        @page { size: A4; margin: 15mm; }
+        body { background: #fff; color: #000; font-family: sans-serif; }
+        .pdf-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1d2e58; padding: 15px 0; margin-bottom: 15px; }
+        .pdf-shop-title { font-size: 2rem; color: #1d2e58; margin: 0; }
+        .pdf-details { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 12px; background: #f8f9fa; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .pdf-table th { background: #1d2e58; color: #fff; padding: 8px; text-align: left; }
+        .pdf-table td { padding: 8px; border-bottom: 1px solid #ddd; }
+        .pdf-editable-input, .pdf-editable-num { border: none !important; background: transparent !important; }
+        .pdf-total-section { border-top: 2px solid #1d2e58; padding-top: 15px; text-align: right; font-weight: bold; font-size: 1.3rem; }
+        .pdf-words-row { text-align: right; color: #666; font-style: italic; margin-bottom: 30px; }
+        .pdf-footer { text-align: center; font-size: 0.75rem; color: #999; margin-top: 40px; }
+        .no-print-action { display: none !important; }
+      </style>
+      <div>${printContents}</div>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContents;
+    location.reload();
+  });
+
+  $("billBtn").addEventListener("click", openBillFromExpr);
+  $("billCloseBtn").addEventListener("click", function(){ sheet("bill", false); });
+
   function renderHistory(){
-    var list = $("list");
-    list.innerHTML = "";
-    if (!storageOk) note(list, t("noStore"));
-    if (!records.length){ note(list, t("noHist")); return; }
+    var list = $("list"); list.innerHTML = "";
+    if (!storageOk) list.appendChild(el("div", "empty", t("noStore")));
+    if (!records.length){ list.appendChild(el("div", "empty", t("noHist"))); return; }
     records.forEach(function(h){
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "item";
-      var s = document.createElement("small"); s.textContent = pretty(h.e) + " =";
-      var v = document.createElement("b"); v.textContent = formatNum(splitNum(h.r));
-      b.appendChild(s); b.appendChild(v);
-      if (h.t){ var w = document.createElement("small"); w.textContent = fmtWhen(h.t); b.appendChild(w); }
-      b.addEventListener("click", function(){ endSession(); expr = h.e; result = h.r; error = ""; sheet("hist", false); render(); saveState(); });
+      var b = el("button", "item"); b.type = "button";
+      if (h.k === "bill"){
+        var head = el("div", "ttl"), who = h.customer || h.shop || h.seller || t("billTag");
+        head.appendChild(el("span", "", who)); head.appendChild(el("span", "tag", t("billTag")));
+        b.appendChild(head);
+        var sub = [h.shop, h.seller].filter(function(x){ return x && x !== who; }).join(" · ");
+        if (sub) b.appendChild(el("small", "", sub));
+        b.appendChild(el("small", "", h.items.length + " " + t("lines")));
+        b.appendChild(el("b", "", formatNum(splitNum(h.r))));
+        b.addEventListener("click", function(){ sheet("hist", false); openBillRecord(h); });
+      } else {
+        if (h.name) b.appendChild(el("div", "ttl", h.name));
+        b.appendChild(el("small", "", prettyExpr(h.e) + " ="));
+        b.appendChild(el("b", "", formatNum(splitNum(h.r))));
+        b.addEventListener("click", function(){
+          endSession(); trail = []; expr = h.r; cur = expr.length; result = null; err = "";
+          sheet("hist", false); render(); saveState();
+        });
+      }
+      if (h.t) b.appendChild(el("small", "", fmtWhen(h.t)));
       list.appendChild(b);
     });
   }
 
-  // ===== 9. थीम (हल्की / गहरी) =====
   function svg(inner){
     return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
   var MOON = svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>');
   var SUN = svg('<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>');
-  function isDark(){
-    return themeMode === "dark" || (themeMode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  }
+  function isDark(){ return themeMode === "dark" || (themeMode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches); }
   function applyTheme(){
-    document.documentElement.setAttribute("data-theme", isDark() ? "dark" : "light");
-    $("themeBtn").innerHTML = isDark() ? SUN : MOON;
+    var d = isDark();
+    document.documentElement.setAttribute("data-theme", d ? "dark" : "light");
+    $("themeBtn").innerHTML = d ? SUN : MOON;
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", d ? "#1d2e58" : "#e8ecf4");
   }
   function setTheme(m){ themeMode = m; lsSet(TKEY, m); applyTheme(); }
+  try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){ if (themeMode === "auto") applyTheme(); }); } catch(e){}
 
-  // ===== 10. बटन की आवाज़ (Web Audio, कोई ऑडियो फ़ाइल नहीं) =====
   var audioCtx = null;
   function beep(k){
     if (!soundOn) return;
@@ -528,8 +1185,12 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
       o.start(now); o.stop(now + 0.07);
     } catch(e){}
   }
+  function feedback(k){
+    if (!soundOn) return;
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch(e){}
+    beep(k);
+  }
 
-  // ===== 11. सेटिंग्स, पैनल और बटनों से जोड़ना =====
   function sheet(id, open){ $(id).classList.toggle("open", open); }
   function mark(id, attr, isOn){
     Array.prototype.forEach.call($(id).children, function(b){ b.classList.toggle("on", isOn(b.getAttribute(attr))); });
@@ -544,21 +1205,13 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
     lsSet(LKEY, lang); lsSet(UKEY, uiLang);
     syncOpts(); applyUi(); render();
   }
-  function setSound(on){
-    soundOn = on;
-    lsSet(SKEY, on ? "on" : "off");
-    syncOpts();
-    beep("5");
-  }
+  function setSound(on){ soundOn = on; lsSet(SKEY, on ? "on" : "off"); syncOpts(); beep("5"); }
 
   function on(id, fn){ $(id).addEventListener("click", fn); }
   function onPick(id, attr, fn){
-    on(id, function(ev){
-      var b = ev.target.closest("button[" + attr + "]");
-      if (b) fn(b.getAttribute(attr));
-    });
+    on(id, function(ev){ var b = ev.target.closest("button[" + attr + "]"); if (b) fn(b.getAttribute(attr)); });
   }
-  onPick("pad", "data-k", function(k){ beep(k); press(k); });
+  onPick("pad", "data-k", function(k){ feedback(k); press(k); });
   onPick("optLang", "data-l", setLang);
   onPick("optSound", "data-s", function(v){ setSound(v === "on"); });
   on("themeBtn", function(){ setTheme(isDark() ? "light" : "dark"); });
@@ -567,9 +1220,24 @@ button:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
   on("setClose", function(){ sheet("settings", false); });
   on("histClose", function(){ sheet("hist", false); });
   on("histClear", function(){ records = []; saveRecords(); renderHistory(); });
-  ["settings", "hist"].forEach(function(id){   // बाहर के काले हिस्से पर टैप से बंद
+  ["settings", "hist", "bill"].forEach(function(id){
     on(id, function(ev){ if (ev.target === $(id)) sheet(id, false); });
   });
+
+  document.addEventListener("keydown", function(ev){
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.defaultPrevented) return;
+    var open = document.querySelector(".overlay.open");
+    if (ev.key === "Escape"){ if (open){ open.classList.remove("open"); ev.preventDefault(); } return; }
+    if (open || (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName))) return;
+    if (ev.target && ev.target.tagName === "BUTTON" && (ev.key === "Enter" || ev.key === " ")) return;
+    var map = {"0":"0","1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9", ".":".", ",":".",
+               "+":"+","-":"-","*":"*","/":"/","%":"%","Enter":"=","=":"=","Backspace":"B","Delete":"C","c":"C","C":"C"};
+    if (map[ev.key]){ ev.preventDefault(); feedback(map[ev.key]); press(map[ev.key]); return; }
+    if (ev.key === "ArrowLeft" && cur > 0){ cur--; render(); saveState(); ev.preventDefault(); }
+    if (ev.key === "ArrowRight" && cur < expr.length){ cur++; render(); saveState(); ev.preventDefault(); }
+  });
+  window.addEventListener("resize", render);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
 
   Array.prototype.forEach.call(document.querySelectorAll(".key"), function(k, i){ k.style.setProperty("--i", i); });
   applyTheme();
