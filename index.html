@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="color-scheme" content="light dark">
-<!-- PDF बनाने के लिए html2pdf लाइब्रेरी -->
+<!-- PDF बनाने के लिए लाइब्रेरी -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 (function(){
@@ -21,6 +21,7 @@
 </script>
 <title>Word Calculator</title>
 <style>
+/* ===== रंग ===== */
 :root{
   --bg:#e8ecf4; --p1:#ffffff; --p2:#eef2f9; --panel-text:#000000; --panel-sub:#55627f; --gold:#8a4b00;
   --panel-line:#d3dbea; --panel-shadow:0 8px 20px rgba(30,50,100,.13); --soft:rgba(10,20,50,.07);
@@ -51,18 +52,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .top{display:flex;align-items:center;gap:8px}
 .round{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--soft);color:var(--panel-text);display:grid;place-items:center;cursor:pointer}
 .display-area{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:6px 2px}
-.expr,.main{width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
-.expr::-webkit-scrollbar,.main::-webkit-scrollbar{display:none}
-.expr{font-size:3.2rem;font-weight:500;line-height:1.15;cursor:text;color:var(--panel-text);user-select:text;-webkit-user-select:text;}
-.expr-in,.main-in{display:inline-block;min-width:100%;text-align:right}
-.ph{color:var(--panel-sub);opacity:.5}
-.ch.op,.ch.pc{color:var(--opc);font-weight:700}
-.cm{opacity:.9}
-.eqs{color:var(--opc)}
-.cur{display:inline-block;width:2px;height:1em;margin:0 1px 0 -1px;background:var(--opc);vertical-align:-.12em;border-radius:1px}
-@media (prefers-reduced-motion:no-preference){.cur{animation:blink 1.06s steps(1) infinite}}
-@keyframes blink{50%{opacity:0}}
-.main{font-size:2.2rem;font-weight:500;line-height:1.2;min-height:1.2em;color:var(--panel-sub)}
+.expr-wrap{width:100%;display:flex;justify-content:flex-end;overflow:hidden;}
+.expr{width:100%;border:none;background:transparent;outline:none;font-size:3.2rem;font-weight:500;line-height:1.15;color:var(--panel-text);text-align:right;direction:ltr;padding:0;margin:0;font-family:inherit;}
+.expr::placeholder{color:var(--panel-sub);opacity:.5}
+.main{width:100%;font-size:2.2rem;font-weight:500;line-height:1.2;min-height:1.2em;color:var(--panel-sub);text-align:right;white-space:nowrap;overflow-x:auto;scrollbar-width:none;}
+.main::-webkit-scrollbar{display:none}
 .main.final{color:var(--panel-text);font-weight:700}
 .main.bad{color:var(--clear-text);font-size:1.3rem}
 .words-container{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;min-height:3em;border-top:1px solid var(--soft);padding-top:10px}
@@ -109,6 +103,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .item .tag{font-size:.7rem;background:var(--soft);color:var(--panel-sub);border-radius:6px;padding:2px 6px;align-self:center;flex:none}
 .item small{display:block;color:var(--panel-sub);font-size:.85rem;margin-top:3px;overflow-wrap:anywhere}
 .item b{font-size:1.2rem;color:var(--panel-text)}
+
+/* बिल पेज */
 .bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .bdate{color:var(--panel-sub);font-size:.8rem;text-align:right}
 .fld{width:100%;min-width:0;border:1px solid var(--panel-line);background:var(--p1);color:var(--panel-text);border-radius:12px;padding:11px 12px;font:inherit;font-size:1rem}
@@ -122,14 +118,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .bnum .sg.neg{color:var(--clear-text)}
 .bnum small{display:block;color:var(--panel-sub);font-size:.72rem;overflow:hidden;text-overflow:ellipsis}
 .bdel{flex:none;width:32px;height:32px;border:0;border-radius:50%;background:var(--clear);color:var(--clear-text);font-size:1.25rem;line-height:1;cursor:pointer}
-.bname{flex:1;min-width:0;padding:8px 10px;font-size:.95rem}
+.bname{flex:1;min-width:0;padding:8px 10px;font-size:.95rem;text-align:right;direction:ltr;}
 
-/* Total Box Layout */
-.total-wrapper { display:flex; flex-direction:column; align-items:center; margin-top:8px; }
-.total-label { font-weight:700; font-size:1rem; color:var(--panel-text); margin-bottom:4px; align-self: flex-start; }
-.total-content { display:flex; align-items:center; justify-content:space-between; width:100%; background:var(--bg); border:1px solid var(--panel-line); border-radius:10px; padding:6px 12px; }
-.total-num { flex:1; text-align:center; font-weight:700; font-size:1.3rem; color:var(--panel-text); }
-.total-words { flex:0 0 auto; text-align:right; color:var(--gold); font-weight:600; font-size:0.9rem; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Total Box Layout (Fixed Alignment) */
+.total-wrapper { display:flex; flex-direction:column; margin-top:8px; }
+.total-label { font-weight:700; font-size:1.1rem; color:var(--panel-text); margin-bottom:4px; }
+.total-content { display:flex; align-items:center; justify-content:space-between; width:100%; background:var(--bg); border:1px solid var(--panel-line); border-radius:10px; padding:8px 12px; gap: 10px;}
+.total-words { flex:1; text-align:left; color:var(--gold); font-weight:600; font-size:0.95rem; white-space: normal;}
+.total-num { flex:none; text-align:right; font-weight:700; font-size:1.4rem; color:var(--panel-text); white-space: nowrap;}
 
 .sheet .actions{position:sticky;bottom:0}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);transform:translateX(-50%) translateY(10px);background:#14213d;color:#fff;padding:10px 16px;border-radius:999px;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:300;max-width:90%;text-align:center}
@@ -140,7 +136,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .bill-actions-top button.pdf-btn-main { flex: 1; background: var(--eq); color: var(--eq-text); border:none; }
 .bill-actions-top button.x-btn { flex: 0 0 44px; padding:0; height: 40px; border-radius: 50%; background: var(--clear); color: var(--clear-text); font-size:1.2rem; border:none; }
 
-.addItemBtn { flex: none; width: 34px; height: 34px; border-radius: 8px; background: var(--eq); color: var(--eq-text); border: 0; font-size: 1.2rem; font-weight: 700; cursor: pointer; display:grid; place-items:center; }
+/* Yellow + Button Fixed Size */
+.addItemBtn { flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--eq); color: var(--eq-text); border: 0; font-size: 1.4rem; font-weight: 700; cursor: pointer; display:grid; place-items:center; }
 
 /* Fullscreen PDF Preview Overlay */
 .pdf-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; z-index: 100; }
@@ -154,9 +151,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .pdf-body { flex: 1; overflow-y: auto; padding: 20px 10px; display: flex; justify-content: center; background: #525659; }
 .pdf-page-wrapper { background: #fff; width: 100%; max-width: 680px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border-radius: 4px; }
 
-/* Premium & Clean PDF Content Styling */
+/* Premium PDF Content Styling */
 .pdf-content { background: #fff; color: #222; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; box-sizing: border-box; }
-
 .pdf-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1d2e58; padding: 18px 20px; margin-bottom: 20px; background: linear-gradient(135deg, #f8f9fc 0%, #edf2f9 100%); border-radius: 12px; box-shadow: inset 0 0 0 1px #d3dbea; }
 .pdf-shop-title { font-size: 2rem; font-weight: 900; color: #1d2e58; margin: 0; line-height: 1.1; letter-spacing: -0.5px; }
 .pdf-meta-box { text-align: right; }
@@ -181,24 +177,27 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .pdf-editable-input:focus { border: 1px solid #1d2e58; background: #fff; outline: none; }
 .pdf-editable-num { text-align: right; border: 1px dashed #ccc; background: transparent; padding: 4px 6px; font: inherit; color: inherit; width: 110px; border-radius: 4px; box-sizing: border-box; }
 .pdf-editable-num:focus { border: 1px solid #1d2e58; background: #fff; outline: none; }
-
 .pdf-del-btn { border:0; background: #fde2de; color: #a1281c; border-radius: 50%; width:24px; height:24px; font-weight:bold; cursor:pointer; display:inline-grid; place-items:center; line-height:1; }
 .pdf-add-row-btn { border:1px dashed #1d2e58; background: #eef2f9; color:#1d2e58; padding: 6px 12px; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600; margin-top: 8px; display:inline-flex; align-items:center; gap:4px; }
 .pdf-add-row-btn:hover { background: #d9e1f1; }
 .no-print-action { display: table-cell; }
+
+/* PDF Export Specific Overrides (strips dashed borders for final output) */
+.pdf-export-mode .pdf-editable-input, .pdf-export-mode .pdf-editable-num { border: none !important; background: transparent !important; }
+.pdf-export-mode .no-print-action { display: none !important; }
 </style>
 </head>
 <body>
 <div class="app">
   <section class="panel">
     <div class="top">
-      <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="round" id="themeBtn" type="button" data-ia="theme"></button>
     </div>
 
     <div class="display-area">
-      <div class="expr" id="expr"><div class="expr-in" id="exprIn"></div></div>
-      <div class="main" id="main"><div class="main-in" id="mainIn"></div></div>
+      <div class="expr-wrap"><input class="expr" id="expr" type="text" inputmode="none" spellcheck="false" placeholder="0" autocomplete="off"></div>
+      <div class="main" id="main"></div>
     </div>
 
     <div class="words-container">
@@ -295,8 +294,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       <div class="total-wrapper">
         <div class="total-label" data-i="total"></div>
         <div class="total-content">
-          <div class="total-num" id="billTotal">0</div>
           <div class="total-words" id="billWords">शून्य</div>
+          <div class="total-num" id="billTotal">0</div>
         </div>
       </div>
     </div>
@@ -306,7 +305,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 <!-- प्रीमियम PDF Preview -->
 <div class="pdf-overlay" id="pdfOverlay">
   <div class="pdf-topbar">
-    <div class="pdf-topbar-title">Bill Preview</div>
+    <div class="pdf-topbar-title" data-i="pdfPreview"></div>
     <div class="pdf-topbar-actions">
       <button class="pdf-icon-btn" id="pdfShareAction" title="Share Bill">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
@@ -336,7 +335,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   var $ = function(id){ return document.getElementById(id); };
   function el(tag, cls, text){ var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
 
-  // [बग सुधारा गया]: हिंदी अंकों/शब्दों की स्पेलिंग (47-48 सैंतीस/अड़तालीस) पूरी तरह सही की गई है
+  // 47 वें नंबर की गलती सुधार दी गई है (सैंतालीस)
   var HI = ["शून्य","एक","दो","तीन","चार","पाँच","छह","सात","आठ","नौ","दस",
   "ग्यारह","बारह","तेरह","चौदह","पंद्रह","सोलह","सत्रह","अठारह","उन्नीस","बीस",
   "इक्कीस","बाईस","तेईस","चौबीस","पच्चीस","छब्बीस","सत्ताईस","अट्ठाईस","उनतीस","तीस",
@@ -431,19 +430,24 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     return res;
   }
   
-  // [बग सुधारा गया]: Floating-point math की प्रेसिजन समस्या ठीक करने के लिए toFixed(10) का उपयोग
+  // गणित का सबसे बड़ा बग फिक्स (1/10000000 = 0.0000001)
   function toPlain(n){
     if (Math.abs(n) >= 1e15) throw new Error("big");
-    var fixed = parseFloat(n.toFixed(10));
-    var s = String(fixed);
+    var s = String(n);
     if (s.indexOf("e") !== -1) {
-      let parts = s.split('e');
-      let num = parseFloat(parts[0]);
-      let exp = parseInt(parts[1]);
-      return num.toFixed(Math.max(0, -exp)).replace(/\.?0+$/, "");
+      var parts = s.split('e');
+      var num = parseFloat(parts[0]);
+      var exp = parseInt(parts[1]);
+      if (exp < 0) {
+        var str = num.toFixed(Math.abs(exp) + 10);
+        s = str.replace(/0+$/, "").replace(/\.$/, "");
+      } else {
+        s = num.toFixed(0) + "0".repeat(exp);
+      }
     }
     return s;
   }
+
   function errKey(ex){ return ex && ex.message === "div0" ? "eDiv" : (ex && ex.message === "big" ? "eBig" : "eBad"); }
   function trimOps(e){ return e.replace(/[+\-*\/]+$/, ""); }
 
@@ -463,7 +467,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       var pm = /^(\d+\.?\d*|\.\d+)%$/.exec(t.x);
       var val = (pm && k > 0) ? running * parseFloat(pm[1]) / 100 : evaluate(t.x);
       running += t.s === "-" ? -val : val;
-      return {s: t.s, x: t.x, v: toPlain(val), n: ""};
+      return {id: Math.random().toString(36).substr(2, 9), s: t.s, x: t.x, v: toPlain(val), n: ""};
     });
   }
   function itemsTotal(items){
@@ -477,7 +481,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     try { return toPlain(s); } catch(e){ return "0"; }
   }
 
-  var HKEY = "shabd_calc_history_v3", STKEY = "shabd_calc_state", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui",
+  var HKEY = "shabd_calc_history_v4", STKEY = "shabd_calc_state", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui",
       TKEY = "shabd_calc_theme", SKEY = "shabd_calc_sound", SHOPKEY = "shabd_calc_shop", SELLERKEY = "shabd_calc_seller";
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
@@ -486,7 +490,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     return h && typeof h.e === "string" && typeof h.r === "string" && (h.k !== "bill" || Array.isArray(h.items));
   }
   var records = [];
-  try { records = JSON.parse(lsGet(HKEY) || lsGet("shabd_calc_history_named") || lsGet("shabd_calc_history") || "[]"); } catch(e){}
+  try { records = JSON.parse(lsGet(HKEY) || "[]"); } catch(e){}
   if (!Array.isArray(records)) records = [];
   records = records.filter(validRecord);
   function saveRecords(){ lsSet(HKEY, JSON.stringify(records.slice(0, MAX_REC))); }
@@ -498,30 +502,30 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   var themeMode = lsGet(TKEY);
   if (themeMode !== "light" && themeMode !== "dark") themeMode = "auto";
   var soundOn = lsGet(SKEY) !== "off";
-  var storageOk = lsSet("shabd_calc_test", "1");
-  try { localStorage.removeItem("shabd_calc_test"); } catch(e){}
 
   var I18N = {
     hi: {title:"शब्द कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
          billBtn:"बिल बनाएं / नाम के साथ सेव करें", speakBtn:"बोलकर सुनें", copyBtn:"कॉपी करें",
          langLabel:"भाषा (शब्द कैसे दिखें)", off:"बंद करें", soundLabel:"बटन की आवाज़", soundOn:"चालू", soundOff:"बंद",
          viewHist:"हिस्ट्री देखें", close:"बंद करें", histTitle:"पिछले हिसाब", clearHist:"हिस्ट्री साफ़ करें",
-         noHist:"अभी कोई हिसाब नहीं है।", noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है, इसलिए बंद होने पर हिस्ट्री मिट सकती है।",
+         noHist:"अभी कोई हिसाब नहीं है।", noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है।",
          err:"त्रुटि", eDiv:"0 से भाग नहीं हो सकता", eBig:"संख्या बहुत बड़ी है", eBad:"हिसाब सही नहीं है",
-         copied:"कॉपी हो गया", copyFail:"कॉपी नहीं हो पाया", pasted:"पेस्ट हो गया", notNum:"यह संख्या या हिसाब नहीं लगता",
-         speakNo:"इस फ़ोन में बोलने की सुविधा नहीं है", saved:"सेव हो गया", needExpr:"पहले कोई हिसाब लिखिए",
-         billTitle:"बिल / हिसाब", shopPh:"दुकान का नाम (चाहें तो)", sellerPh:"विक्रेता का नाम", customerPh:"ग्राहक का नाम",
-         itemPh:"सामान का नाम", total:"कुल", save:"सेव करें", remove:"यह लाइन हटाएँ", noLines:"कोई लाइन नहीं बची।", billTag:"बिल", lines:"लाइन"},
+         copied:"कॉपी हो गया", copyFail:"कॉपी नहीं हो पाया", pasted:"पेस्ट हो गया", notNum:"यह संख्या नहीं है",
+         speakNo:"आवाज़ सुविधा नहीं है", saved:"सेव हो गया", needExpr:"पहले हिसाब लिखिए",
+         billTitle:"बिल / हिसाब", shopPh:"दुकान का नाम", sellerPh:"विक्रेता का नाम", customerPh:"ग्राहक का नाम",
+         itemPh:"सामान", total:"कुल", remove:"हटाएँ", noLines:"कोई लाइन नहीं बची।", billTag:"बिल", lines:"लाइन",
+         pdfPreview:"बिल प्रीव्यू", downloadPdf:"डाउनलोड", print:"प्रिंट", addLine:"+ नई लाइन जोड़ें", pdfLibErr:"PDF लाइब्रेरी लोड नहीं हुई", downloading:"डाउनलोड हो रहा है..."},
     en: {title:"Word Calculator", settings:"Settings", theme:"Switch theme", history:"History", erase:"Erase",
          billBtn:"Make bill / save with names", speakBtn:"Listen", copyBtn:"Copy",
          langLabel:"Language (how words appear)", off:"Off", soundLabel:"Button sound", soundOn:"On", soundOff:"Off",
          viewHist:"View history", close:"Close", histTitle:"Past calculations", clearHist:"Clear history",
-         noHist:"No calculations yet.", noStore:"Storage is unavailable in this view, so history may be lost when it closes.",
+         noHist:"No calculations yet.", noStore:"Storage is unavailable in this view.",
          err:"Error", eDiv:"Cannot divide by 0", eBig:"Number is too large", eBad:"Invalid calculation",
-         copied:"Copied", copyFail:"Could not copy", pasted:"Pasted", notNum:"That does not look like a number or sum",
-         speakNo:"Speech is not available on this phone", saved:"Saved", needExpr:"Enter a calculation first",
-         billTitle:"Bill / Statement", shopPh:"Shop name (optional)", sellerPh:"Seller name", customerPh:"Customer name",
-         itemPh:"Item name", total:"Total", save:"Save", remove:"Remove this line", noLines:"No lines left.", billTag:"Bill", lines:"lines"}
+         copied:"Copied", copyFail:"Could not copy", pasted:"Pasted", notNum:"Not a number",
+         speakNo:"Speech not available", saved:"Saved", needExpr:"Enter calculation first",
+         billTitle:"Bill / Statement", shopPh:"Shop name", sellerPh:"Seller name", customerPh:"Customer name",
+         itemPh:"Item", total:"Total", remove:"Remove", noLines:"No lines left.", billTag:"Bill", lines:"lines",
+         pdfPreview:"Bill Preview", downloadPdf:"Download", print:"Print", addLine:"+ Add New Line", pdfLibErr:"PDF Library missing", downloading:"Downloading..."}
   };
   function t(k){ return I18N[uiLang][k] || k; }
   function applyUi(){
@@ -532,14 +536,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       var s = t(n.getAttribute("data-ia")); n.setAttribute("aria-label", s); n.setAttribute("title", s);
     });
   }
-  var DAYS = {
-    hi: ["रविवार","सोमवार","मंगलवार","बुधवार","गुरुवार","शुक्रवार","शनिवार"],
-    en: ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-  };
-  var MONTHS = {
-    hi: ["जनवरी","फ़रवरी","मार्च","अप्रैल","मई","जून","जुलाई","अगस्त","सितंबर","अक्टूबर","नवंबर","दिसंबर"],
-    en: ["January","February","March","April","May","June","July","August","September","October","November","December"]
-  };
+  var DAYS = { hi: ["रविवार","सोमवार","मंगलवार","बुधवार","गुरुवार","शुक्रवार","शनिवार"], en: ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] };
+  var MONTHS = { hi: ["जनवरी","फ़रवरी","मार्च","अप्रैल","मई","जून","जुलाई","अगस्त","सितंबर","अक्टूबर","नवंबर","दिसंबर"], en: ["January","February","March","April","May","June","July","August","September","October","November","December"] };
   function fmtWhen(ts){
     var d = new Date(ts), h = d.getHours(), m = d.getMinutes();
     var mm = (m < 10 ? "0" : "") + m, h12 = h % 12 === 0 ? 12 : h % 12;
@@ -554,295 +552,276 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     clearTimeout(toastTimer); toastTimer = setTimeout(function(){ n.classList.remove("show"); }, 1800);
   }
 
+  // ===== कैलकुलेटर लॉजिक (Native Input) =====
   var expr = "", cur = 0, result = null, err = "";
-  var trail = [];
-  var savedBillFor = "";
+  var inputEl = $("expr");
 
-  function insertAt(s){ expr = expr.slice(0, cur) + s + expr.slice(cur); cur += s.length; }
-  function numAround(p){
-    var s = p, e = p;
-    while (s > 0 && /[0-9.]/.test(expr.charAt(s - 1))) s--;
-    while (e < expr.length && /[0-9.]/.test(expr.charAt(e))) e++;
-    return [s, e];
-  }
-  function continueFromResult(){
-    trail.push({e: expr, r: result});
-    expr = result; cur = expr.length; result = null;
-  }
-
-  function addAuto(e, r){
-    for (var i = 0; i < records.length; i++){
-      if (records[i].e === e && records[i].r === r){
-        if (records[i].k === "bill") return;
-        records.splice(i, 1); break;
-      }
-    }
-    records.unshift({e: e, r: r, t: Date.now()});
-    records = records.slice(0, MAX_REC); saveRecords();
-  }
-  function endSession(){
-    var steps = trail.slice(), seg = null, key = result !== null ? expr : trimOps(expr);
-    if (key && key === savedBillFor){ trail = []; return; }
-    if (result !== null) seg = {e: expr, r: result};
-    else if (key && key !== "-"){ try { seg = {e: key, r: toPlain(evaluate(key))}; } catch(ex){} }
-    if (seg){
-      var onlyNumber = /^-?\d*\.?\d+$/.test(seg.e);
-      if (!(onlyNumber && (steps.length || parseFloat(seg.e) === 0))) steps.push(seg);
-    }
-    if (steps.length){
-      addAuto(steps.map(function(z, i){ return i < steps.length - 1 ? z.e + " = " + z.r : z.e; }).join(", "), steps[steps.length - 1].r);
-    }
-    trail = [];
-  }
-
-  function toggleSign(){
-    var nb = numAround(cur), s = nb[0];
-    if (s === nb[1]){ if (expr === ""){ expr = "-"; cur = 1; } return; }
-    var before = expr.slice(0, s), p = before.charAt(before.length - 1), pp = before.charAt(before.length - 2);
-    if (p === "+") expr = before.slice(0, -1) + "-" + expr.slice(s);
-    else if (p === "-"){
-      var binary = /[0-9%]/.test(pp);
-      expr = before.slice(0, -1) + (binary ? "+" : "") + expr.slice(s);
-      if (!binary) cur -= 1;
-    } else { expr = before + "-" + expr.slice(s); cur += 1; }
-  }
-
-  function press(k){
-    err = "";
-    if (/^[0-9.+\-*\/%]$/.test(k) && expr.length >= MAX_LEN) return;
-    if (/^[0-9.]$/.test(k)){
-      if (result !== null){ endSession(); expr = ""; cur = 0; result = null; }
-      if (expr.charAt(cur - 1) === "%") return;
-      var nb = numAround(cur), tok = expr.slice(nb[0], nb[1]);
-      if (k === "."){
-        if (tok.indexOf(".") !== -1) return;
-        insertAt(tok === "" ? "0." : ".");
-      } else {
-        if (tok.replace(".", "").length >= MAX_DIGITS) return;
-        if (tok === "0" && cur === nb[1]){ expr = expr.slice(0, nb[0]) + k + expr.slice(nb[1]); cur = nb[0] + 1; }
-        else insertAt(k);
-      }
-    } else if ("+-*/".indexOf(k) !== -1){
-      if (result !== null) continueFromResult();
-      var prev = expr.charAt(cur - 1);
-      if (cur === 0){ if (k === "-") insertAt("-"); }
-      else if (/[+\-*\/]/.test(prev)){
-        if (k === "-" && (prev === "*" || prev === "/")) insertAt("-");
-        else {
-          var s = cur;
-          while (s > 0 && /[+\-*\/]/.test(expr.charAt(s - 1))) s--;
-          var rep = (s === 0 && k !== "-") ? "" : k;
-          expr = expr.slice(0, s) + rep + expr.slice(cur); cur = s + rep.length;
+  function formatDisplay(val, pos) {
+    var clean = val.replace(/[^0-9+\-*\/.%]/g, "").replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
+    var out = "";
+    var chars = 0; 
+    var newPos = pos;
+    for (var i = 0; i < clean.length; i++) {
+        if (i > 0 && /[0-9]/.test(clean[i]) && /[0-9]/.test(clean[i-1])) {
+            var pre = clean.slice(0, i).replace(/[^0-9]/g, "");
+            var rem = pre.length % 3;
+            if (rem === 0 && pre.length > 0) out += ",";
         }
-      } else insertAt(k);
-    } else if (k === "%"){
-      if (result !== null) continueFromResult();
-      if (/[0-9]/.test(expr.charAt(cur - 1))) insertAt("%");
-    } else if (k === "+/-"){
-      if (result !== null) continueFromResult();
-      toggleSign();
-    } else if (k === "B"){
-      if (result !== null){ result = null; cur = expr.length; }
-      if (cur > 0){ expr = expr.slice(0, cur - 1) + expr.slice(cur); cur--; }
-    } else if (k === "C"){
-      endSession(); expr = ""; cur = 0; result = null; savedBillFor = "";
-    } else if (k === "="){
+        if (i < pos) chars++;
+        out += clean[i] === "*" ? "×" : clean[i] === "/" ? "÷" : clean[i] === "-" ? "−" : clean[i];
+    }
+    inputEl.value = out;
+    if (pos !== undefined) inputEl.setSelectionRange(newPos, newPos);
+  }
+
+  function syncExpr() {
+    expr = inputEl.value.replace(/[^0-9+\-*\/.%]/g, "").replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
+    cur = inputEl.value.length; // Simplified tracking for native input
+    result = null;
+    err = "";
+    render();
+  }
+
+  inputEl.addEventListener("input", function(){
+    var pos = inputEl.selectionStart;
+    var raw = inputEl.value;
+    var clean = raw.replace(/[^0-9+\-*\/.%]/g, "").replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
+    
+    // Auto dot fix (multiple dots)
+    var parts = clean.split(/([+\-*\/])/);
+    for (var i = 0; i < parts.length; i += 2) {
+        var dot = parts[i].indexOf('.');
+        if (dot !== -1) {
+            parts[i] = parts[i].slice(0, dot + 1) + parts[i].slice(dot + 1).replace(/\./g, '');
+        }
+    }
+    clean = parts.join('');
+    
+    if (clean !== expr) {
+      expr = clean;
+      cur = clean.length;
+      result = null;
+      err = "";
+      render(); saveState();
+    } else {
+      // If just comma added, re-format
+      if (raw !== inputEl.value) formatDisplay(inputEl.value, pos);
+    }
+  });
+
+  // Keypad se type karna
+  function press(k) {
+    err = "";
+    if (k === "C") {
+      endSession(); expr = ""; cur = 0; result = null; inputEl.value = ""; render(); saveState(); return;
+    }
+    
+    if (k === "B") {
+      var start = inputEl.selectionStart, end = inputEl.selectionEnd;
+      if (start === end && start > 0) {
+        inputEl.value = inputEl.value.slice(0, start - 1) + inputEl.value.slice(end);
+        inputEl.setSelectionRange(start - 1, start - 1);
+      } else {
+        inputEl.value = inputEl.value.slice(0, start) + inputEl.value.slice(end);
+        inputEl.setSelectionRange(start, start);
+      }
+      syncExpr(); return;
+    }
+
+    if (k === "=") {
       if (result !== null) return;
       var e = trimOps(expr);
       if (!e || e === "-") return;
-      try { result = toPlain(evaluate(e)); expr = e; cur = e.length; }
+      try { result = toPlain(evaluate(e)); expr = result; cur = expr.length; inputEl.value = formatNum(splitNum(expr)); }
       catch(ex){ err = errKey(ex); }
+      render(); saveState(); return;
     }
-    render(); saveState();
+
+    if (k === "+/-") {
+      var pos = inputEl.selectionStart;
+      var s = pos;
+      while (s > 0 && /[0-9.]/.test(expr.charAt(s - 1))) s--;
+      var e = pos;
+      while (e < expr.length && /[0-9.]/.test(expr.charAt(e))) e++;
+      var tok = expr.slice(s, e);
+      if (tok) {
+        var before = expr.slice(0, s);
+        if (before.endsWith("-")) { expr = before.slice(0, -1) + tok + expr.slice(e); }
+        else { expr = before + "-" + tok + expr.slice(e); }
+        inputEl.value = expr; // formatted by render later
+      }
+      syncExpr(); return;
+    }
+
+    if (result !== null) { endSession(); expr = ""; cur = 0; result = null; inputEl.value = ""; }
+    
+    var start = inputEl.selectionStart, end = inputEl.selectionEnd;
+    var charToInsert = k === '*' ? '×' : k === '/' ? '÷' : k === '-' ? '−' : k;
+    
+    // prevent double operators
+    var beforeChar = inputEl.value.charAt(start - 1);
+    if (/[+\-*\/×÷−]/.test(k) && /[+\-*\/×÷−]/.test(beforeChar)) {
+        if (k === '-' && (beforeChar === '×' || beforeChar === '÷')) {
+            // allow minus after multiply
+        } else {
+            inputEl.value = inputEl.value.slice(0, start - 1) + charToInsert + inputEl.value.slice(end);
+            inputEl.setSelectionRange(start, start);
+            syncExpr(); return;
+        }
+    }
+
+    inputEl.value = inputEl.value.slice(0, start) + charToInsert + inputEl.value.slice(end);
+    inputEl.setSelectionRange(start + 1, start + 1);
+    syncExpr();
   }
 
-  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result, tr: trail})); }
+  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result})); }
   function loadState(){
     try {
       var st = JSON.parse(lsGet(STKEY) || "null");
-      if (st && typeof st.x === "string" && st.x.length <= MAX_LEN && /^[0-9+\-*\/.%]*$/.test(st.x) &&
-          (st.r === null || /^-?[0-9.]+$/.test(st.r)) && Array.isArray(st.tr)){
+      if (st && typeof st.x === "string" && st.x.length <= MAX_LEN && /^[0-9+\-*\/.%]*$/.test(st.x)) {
         expr = st.x; result = st.r;
         cur = (typeof st.c === "number" && st.c >= 0 && st.c <= st.x.length) ? st.c : st.x.length;
-        trail = st.tr.filter(function(z){ return z && typeof z.e === "string" && typeof z.r === "string"; });
+        inputEl.value = expr;
       }
     } catch(e){}
   }
-  loadState();
 
-  function chHtml(i){
-    var ch = expr.charAt(i), pre = (result === null && cur === i) ? '<span class="cur"></span>' : "";
-    var cls = /[0-9.]/.test(ch) ? "ch" : (ch === "%" ? "ch pc" : "ch op");
-    var shown = ch === "*" ? "×" : ch === "/" ? "÷" : ch === "-" ? "−" : ch;
-    return pre + '<span class="' + cls + '" data-i="' + i + '">' + shown + '</span>';
-  }
-  function exprHtml(){
-    if (expr === "" && result === null) return '<span class="cur"></span><span class="ph">0</span>';
-    var out = "", i = 0, n = expr.length;
-    while (i < n){
-      if (/[0-9.]/.test(expr.charAt(i))){
-        var tok = /^[0-9]*\.?[0-9]*/.exec(expr.slice(i))[0], dot = tok.indexOf("."), intLen = dot === -1 ? tok.length : dot;
-        for (var k = 0; k < tok.length; k++){
-          var rem = intLen - k;
-          if (k > 0 && k < intLen && (rem === 3 || (rem > 3 && rem % 2 === 1))) out += '<span class="cm">,</span>';
-          out += chHtml(i + k);
-        }
-        i += tok.length;
-      } else { out += chHtml(i); i++; }
+  function render() {
+    var mainEl = $("main"), mainIn = $("mainIn"), words = $("words");
+    
+    if (err) {
+      mainEl.textContent = t(err);
+      mainEl.className = "main bad";
+      words.textContent = ""; 
+      return;
     }
-    if (result === null && cur === n) out += '<span class="cur"></span>';
-    if (result !== null) out += '<span class="eqs"> =</span>';
-    return out;
-  }
-  function fit(box, maxRem, minRem){
-    var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    var size = maxRem * rem, min = minRem * rem;
-    box.style.fontSize = size + "px";
-    if (!box.clientWidth) return;
-    let iterations = 0;
-    while (box.scrollWidth > box.clientWidth + 1 && size > min && iterations < 20){ 
-      size -= 2; 
-      box.style.fontSize = size + "px"; 
-      iterations++;
-    }
-  }
-  function keepCursorVisible(){
-    var box = $("expr"), c = $("exprIn").querySelector(".cur");
-    if (result !== null || !c){ box.scrollLeft = box.scrollWidth; return; }
-    var cr = c.getBoundingClientRect(), br = box.getBoundingClientRect();
-    if (cr.left < br.left + 10) box.scrollLeft -= (br.left + 10 - cr.left);
-    else if (cr.right > br.right - 10) box.scrollLeft += cr.right - (br.right - 10);
-  }
-
-  function currentView(){
+    
     var key = trimOps(expr), body = key.replace(/^-/, "");
     var hasOp = /[+\-*\/%]/.test(body), total = "";
-    if (result !== null){ total = result; hasOp = true; }
-    else if (key && key !== "-"){ try { total = toPlain(evaluate(key)); } catch(ex){ total = ""; } }
-    return {total: total, hasOp: hasOp, value: total !== "" ? total : "0"};
-  }
-  function render(){
-    var mainEl = $("main"), mainIn = $("mainIn"), words = $("words");
-    $("exprIn").innerHTML = exprHtml();
-    fit($("expr"), 3.2, 1.6);
-    keepCursorVisible();
+    if (result !== null) { total = result; hasOp = true; }
+    else if (key && key !== "-") { try { total = toPlain(evaluate(key)); } catch(ex) { total = ""; } }
 
-    var v = currentView();
-    if (err){
-      mainIn.textContent = t(err); mainEl.className = "main bad"; mainEl.style.fontSize = "";
-      words.textContent = ""; return;
-    }
-    mainIn.textContent = (v.hasOp && v.total !== "") ? formatNum(splitNum(v.total)) : "";
+    var finalVal = total !== "" ? total : "0";
+    var n = splitNum(finalVal), shown = formatNum(n);
+    
+    if (mainIn) mainIn.textContent = (hasOp && total !== "") ? shown : "";
+    else mainEl.textContent = (hasOp && total !== "") ? shown : "";
     mainEl.className = "main" + (result !== null ? " final" : "");
-    fit(mainEl, 2.2, 1.3);
-    mainEl.scrollLeft = mainEl.scrollWidth;
-    words.textContent = lang === "off" ? "" : wordsLine(v.value, DICT[lang]);
+    
+    words.textContent = lang === "off" ? "" : wordsLine(finalVal, DICT[lang]);
   }
-  $("expr").addEventListener("click", function(ev){
-    var spans = $("exprIn").querySelectorAll(".ch"), idx = expr.length;
-    for (var i = 0; i < spans.length; i++){
-      var r = spans[i].getBoundingClientRect();
-      if (ev.clientX < r.left + r.width / 2){ idx = parseInt(spans[i].getAttribute("data-i"), 10); break; }
-    }
-    if (result !== null) result = null;
-    cur = idx; err = ""; render(); saveState();
-  });
 
-  $("expr").addEventListener("input", function(){
-    var text = $("expr").textContent || "";
-    var s = cleanPaste(text);
-    if (s){
-      expr = s; cur = expr.length; result = null; err = "";
-      render(); saveState(); toast(t("pasted"));
+  // Auto-resize input font
+  function fitInput() {
+    var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    var size = 3.2 * rem;
+    inputEl.style.fontSize = size + "px";
+    if (!inputEl.clientWidth) return;
+    var it = 0;
+    while (inputEl.scrollWidth > inputEl.clientWidth + 1 && size > 1.6 * rem && it < 20) {
+      size -= 2; inputEl.style.fontSize = size + "px"; it++;
     }
-  });
+  }
+  window.addEventListener('resize', fitInput);
+  inputEl.addEventListener('input', fitInput);
 
+  // ===== बोलना, कॉपी, हिस्ट्री =====
   $("speakBtn").addEventListener("click", function(){
-    if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined"){ toast(t("speakNo")); return; }
-    var btn = $("speakBtn");
-    btn.classList.add("speaking");
-    var l = lang === "off" ? uiLang : lang, text = wordsLine(currentView().value, DICT[l]);
-    text = text.replace(" . ", " " + DICT[l].point + " ");
+    if (!window.speechSynthesis) { toast(t("speakNo")); return; }
+    var btn = $("speakBtn"); btn.classList.add("speaking");
+    var val = result !== null ? result : (trimOps(expr) ? toPlain(evaluate(trimOps(expr))) : "0");
+    var text = wordsLine(val || "0", DICT[lang === "off" ? uiLang : lang]).replace(" . ", " " + DICT[uiLang].point + " ");
     window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
-    u.lang = l === "hi" ? "hi-IN" : "en-IN"; u.rate = 0.9;
-    u.onend = function(){ btn.classList.remove("speaking"); };
-    u.onerror = function(){ btn.classList.remove("speaking"); };
+    u.lang = uiLang === "hi" ? "hi-IN" : "en-IN";
+    u.onend = u.onerror = function(){ btn.classList.remove("speaking"); };
     window.speechSynthesis.speak(u);
+    setTimeout(function(){ btn.classList.remove("speaking"); }, 5000); // Fallback
   });
 
   function copyText(text){
     function legacy(){
       try {
         var ta = document.createElement("textarea");
-        ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
-        document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
-        var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok;
+        ta.value = text; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); return true;
       } catch(e){ return false; }
     }
-    if (navigator.clipboard && navigator.clipboard.writeText){
-      return navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return legacy(); });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function(){ return true; }, legacy);
     }
     return Promise.resolve(legacy());
   }
   $("copyBtn").addEventListener("click", function(){
-    var v = currentView().value;
+    var v = result !== null ? result : (trimOps(expr) ? toPlain(evaluate(trimOps(expr))) : "0");
     copyText(v).then(function(ok){ toast(ok ? t("copied") + ": " + formatNum(splitNum(v)) : t("copyFail")); });
   });
 
-  function cleanPaste(text){
-    var s = String(text || "").replace(/\([^)]*\)/g, " ").replace(/[₹$€£,\s\u00a0]/g, "")
-      .replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–—]/g, "-")
-      .replace(/[०-९]/g, function(d){ return String(d.charCodeAt(0) - 0x0966); });
-    if (!s || /[^0-9.+\-*\/%]/.test(s) || /\d*\.\d*\./.test(s) || !/\d/.test(s)) return "";
-    return s.slice(0, 60);
+  function endSession(){
+    var steps = [], seg = null, key = result !== null ? expr : trimOps(expr);
+    if (key && key === savedBillFor) return;
+    if (result !== null) seg = {e: expr, r: result};
+    else if (key && key !== "-") { try { seg = {e: key, r: toPlain(evaluate(key))}; } catch(ex){} }
+    if (seg && !/^-?\d*\.?\d+$/.test(seg.e)) steps.push(seg);
+    if (steps.length) {
+      addAuto(steps.map(function(z){ return z.e + " = " + z.r; }).join(", "), steps[steps.length - 1].r);
+    }
+  }
+  function addAuto(e, r){
+    records = records.filter(function(h){ return !(h.e === e && h.r === r && h.k !== "bill"); });
+    records.unshift({e: e, r: r, t: Date.now()});
+    records = records.slice(0, MAX_REC); saveRecords();
   }
 
+  // ===== बिल लॉजिक =====
   var bill = null;
   function openBillFromExpr(){
     var e = result !== null ? expr : trimOps(expr);
     var items = [];
-    if (e && e !== "-"){
-      try { items = parseTerms(e); } catch(ex){}
-    }
-    // [बग सुधारा गया]: हर बिल के लिए एक स्थिर ID ensure करना ताकि हिस्ट्री बार-बार नई एंट्री न बनाए
-    bill = {id: Date.now(), shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items, key: e};
+    if (e && e !== "-") { try { items = parseTerms(e); } catch(ex){} }
+    bill = {id: Date.now(), shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items};
     showBill();
   }
   function openBillRecord(h){
-    bill = {id: h.t, shop: h.shop || "", seller: h.seller || "", customer: h.customer || "", key: "",
-            items: h.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: it.n || ""}; })};
+    bill = {id: h.t, shop: h.shop || "", seller: h.seller || "", customer: h.customer || "", 
+            items: h.items.map(function(it){ return {id: it.id || Math.random().toString(36).substr(2, 9), s: it.s, x: it.x, v: it.v, n: it.n || ""}; })};
     showBill();
   }
   function showBill(){
     $("billShop").value = bill.shop; $("billSeller").value = bill.seller; $("billCustomer").value = bill.customer;
     renderBill(); sheet("bill", true);
   }
+  
   function renderBill(){
     var box = $("billItems"); box.innerHTML = "";
-    if (!bill.items.length) box.appendChild(el("div", "empty", t("noLines")));
+    if (!bill.items.length) {
+      var emptyBtn = el("button", "pdf-btn-main", "＋ " + t("addLine"));
+      emptyBtn.type = "button"; emptyBtn.style.width = "100%"; emptyBtn.style.padding = "12px"; emptyBtn.style.marginBottom = "10px";
+      emptyBtn.addEventListener("click", function(){
+        bill.items.push({id: Math.random().toString(36).substr(2, 9), s: "+", x: "0", v: "0", n: ""});
+        renderBill();
+      });
+      box.appendChild(emptyBtn);
+    }
     
     bill.items.forEach(function(it, i){
       var row = el("div", "brow");
-      
       var leftDiv = el("div", "bname-wrap");
       leftDiv.style.cssText = "flex:1; display:flex; gap:6px; align-items:center;";
       
       var addBtn = el("button", "addItemBtn", "+");
       addBtn.type = "button";
-      addBtn.title = "Add Item";
       addBtn.addEventListener("click", function(){
-        bill.items.splice(i + 1, 0, {s: "+", x: "0", v: "0", n: ""});
+        bill.items.splice(i + 1, 0, {id: Math.random().toString(36).substr(2, 9), s: "+", x: "0", v: "0", n: ""});
         renderBill();
       });
 
       var inp = el("input", "fld bname");
-      inp.type = "text"; inp.maxLength = 40; inp.autocomplete = "off";
-      inp.placeholder = t("itemPh"); inp.value = it.n || "";
-      inp.addEventListener("input", function(){ it.n = inp.value; });
+      inp.type = "text"; inp.maxLength = 40; inp.placeholder = t("itemPh"); inp.value = it.n || "";
+      inp.addEventListener("input", function(){ it.n = inp.value; saveBillSilently(); });
 
-      leftDiv.appendChild(addBtn);
-      leftDiv.appendChild(inp);
+      leftDiv.appendChild(addBtn); leftDiv.appendChild(inp);
 
       var num = el("div", "bnum"), line = el("div", "");
       line.appendChild(el("span", "sg" + (it.s === "-" ? " neg" : ""), it.s === "-" ? "−" : "+"));
@@ -850,66 +829,56 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       num.appendChild(line);
       if (/[^0-9.]/.test(it.x)) num.appendChild(el("small", "", prettyExpr(it.x)));
       
-      var del = el("button", "bdel", "×"); del.type = "button"; del.setAttribute("aria-label", t("remove"));
+      var del = el("button", "bdel", "×"); del.type = "button";
       del.addEventListener("click", function(){ bill.items.splice(i, 1); renderBill(); });
 
-      row.appendChild(leftDiv);
-      row.appendChild(num);
-      row.appendChild(del);
+      row.appendChild(leftDiv); row.appendChild(num); row.appendChild(del);
       box.appendChild(row);
     });
 
     var total = itemsTotal(bill.items);
     $("billTotal").textContent = formatNum(splitNum(total));
     $("billWords").textContent = lang === "off" ? "" : wordsLine(total, DICT[lang]);
-    
-    autoSaveCurrentBill();
+    saveBillSilently();
   }
 
-  function autoSaveCurrentBill(){
-    if(!bill) return;
+  function saveBillSilently(){
+    if(!bill || !bill.items.length) return;
     var rec = {
       k: "bill", shop: $("billShop").value.trim(), seller: $("billSeller").value.trim(), customer: $("billCustomer").value.trim(),
-      items: bill.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: (it.n || "").trim()}; }),
+      items: bill.items.map(function(it){ return {id: it.id, s: it.s, x: it.x, v: it.v, n: (it.n || "").trim()}; }),
       e: bill.items.map(function(it, i){ return (i === 0 ? (it.s === "-" ? "-" : "") : it.s) + it.x; }).join(""),
-      r: itemsTotal(bill.items), t: bill.id || nextId()
+      r: itemsTotal(bill.items), t: bill.id
     };
+    // Remove old version of this bill
     records = records.filter(function(h){ return !(h.k === "bill" && h.t === rec.t); });
     records.unshift(rec); records = records.slice(0, MAX_REC); saveRecords();
     lsSet(SHOPKEY, rec.shop); lsSet(SELLERKEY, rec.seller);
   }
 
-  $("billShop").addEventListener("input", autoSaveCurrentBill);
-  $("billSeller").addEventListener("input", autoSaveCurrentBill);
-  $("billCustomer").addEventListener("input", autoSaveCurrentBill);
+  $("billShop").addEventListener("input", saveBillSilently);
+  $("billSeller").addEventListener("input", saveBillSilently);
+  $("billCustomer").addEventListener("input", saveBillSilently);
 
-  function nextId(){
-    var m = Date.now();
-    records.forEach(function(h){ if (typeof h.t === "number" && h.t >= m) m = h.t + 1; });
-    return m;
-  }
-
-  /* PDF Preview Renderer */
+  // ===== PDF Preview =====
   function renderPdfPreviewContent(){
     var container = $("pdfContentToPrint");
     var shop = $("billShop").value.trim() || "Shabd Calculator Bill";
     var seller = $("billSeller").value.trim();
     var customer = $("billCustomer").value.trim();
-    var dateStr = fmtWhen((bill && bill.id) ? bill.id : Date.now());
-    var total = itemsTotal(bill ? bill.items : []);
+    var dateStr = fmtWhen(bill.id || Date.now());
+    var total = itemsTotal(bill.items);
     var wordsTotal = lang === "off" ? "" : wordsLine(total, DICT[lang]);
 
     var detailsHTML = "";
     if (seller || customer) {
-      detailsHTML = `
-        <div class="pdf-details">
+      detailsHTML = `<div class="pdf-details">
           <div>${seller ? '<b>Seller Name</b><br>' + seller : ''}</div>
           <div style="text-align:right;">${customer ? '<b>Customer Name</b><br>' + customer : ''}</div>
-        </div>
-      `;
+        </div>`;
     }
 
-    var html = `
+    container.innerHTML = `
       <div class="pdf-header-box">
         <div>
           <span class="pdf-badge">Official Bill</span>
@@ -921,205 +890,151 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       </div>
       ${detailsHTML}
       <table class="pdf-table">
-        <thead>
-          <tr>
-            <th style="width: 30px; text-align:center;">#</th>
-            <th>Item Description</th>
-            <th style="text-align: right; width: 140px;">Amount</th>
-            <th class="no-print-action" style="width: 35px; text-align:center;"></th>
-          </tr>
-        </thead>
-        <tbody id="pdfTableBody">
-        </tbody>
+        <thead><tr><th style="width: 30px; text-align:center;">#</th><th>Item Description</th><th style="text-align: right; width: 120px;">Amount</th><th class="no-print-action" style="width: 35px;"></th></tr></thead>
+        <tbody id="pdfTableBody"></tbody>
       </table>
-      <div style="margin-bottom:15px;" class="no-print-action">
-        <button type="button" class="pdf-add-row-btn" id="pdfAddNewRowBtn">+ Add New Line</button>
-      </div>
+      <div style="margin-bottom:15px;" class="no-print-action"><button type="button" class="pdf-add-row-btn" id="pdfAddNewRowBtn">${t("addLine")}</button></div>
       <div class="pdf-total-section">
-        <div class="pdf-total-row">
-          <span>Total:</span>
-          <span id="pdfTotalVal">${formatNum(splitNum(total))}</span>
-        </div>
+        <div class="pdf-total-row"><span>Total:</span><span id="pdfTotalVal">${formatNum(splitNum(total))}</span></div>
       </div>
-      <div class="pdf-words-row" id="pdfWordsVal">
-        In Words: ${wordsTotal}
-      </div>
-      <div class="pdf-footer">
-        Generated securely via Shabd Calculator
-      </div>
+      <div class="pdf-words-row" id="pdfWordsVal">In Words: ${wordsTotal}</div>
+      <div class="pdf-footer">Generated securely via Shabd Calculator</div>
     `;
 
-    container.innerHTML = html;
-
     var tbody = $("pdfTableBody");
-    tbody.innerHTML = "";
-
-    if (bill && bill.items) {
-      bill.items.forEach(function(it, idx){
-        var tr = document.createElement("tr");
-
-        var tdIdx = document.createElement("td");
-        tdIdx.style.textAlign = "center";
-        tdIdx.textContent = idx + 1;
-        tr.appendChild(tdIdx);
-
-        var tdName = document.createElement("td");
-        var nameInp = document.createElement("input");
-        nameInp.className = "pdf-editable-input";
-        nameInp.type = "text";
-        nameInp.value = it.n || ("Item " + (idx + 1));
-        nameInp.addEventListener("input", function(){
-          it.n = nameInp.value;
-          renderBill();
-        });
-        tdName.appendChild(nameInp);
-        tr.appendChild(tdName);
-
-        var tdVal = document.createElement("td");
-        tdVal.style.textAlign = "right";
-        var numInp = document.createElement("input");
-        numInp.className = "pdf-editable-num";
-        numInp.type = "text";
-        // [बग सुधारा गया]: '0' मान को मिटाने पर तुरंत वापस 0 न होकर खाली रहने की सुविधा
-        numInp.value = it.v;
-        numInp.addEventListener("input", function(){
-          it.v = numInp.value;
-          it.x = numInp.value;
-          updatePdfTotals();
-          renderBill();
-        });
-        tdVal.appendChild(numInp);
-        tr.appendChild(tdVal);
-
-        var tdDel = document.createElement("td");
-        tdDel.className = "no-print-action";
-        tdDel.style.textAlign = "center";
-        var delBtn = document.createElement("button");
-        delBtn.className = "pdf-del-btn";
-        delBtn.textContent = "×";
-        delBtn.addEventListener("click", function(){
-          bill.items.splice(idx, 1);
-          renderPdfPreviewContent();
-          renderBill();
-        });
-        tdDel.appendChild(delBtn);
-        tr.appendChild(tdDel);
-
-        tbody.appendChild(tr);
+    bill.items.forEach(function(it, idx){
+      var tr = document.createElement("tr");
+      
+      var tdIdx = document.createElement("td"); tdIdx.style.textAlign = "center"; tdIdx.textContent = idx + 1; tr.appendChild(tdIdx);
+      
+      var tdName = document.createElement("td");
+      var nameInp = document.createElement("input"); nameInp.className = "pdf-editable-input"; nameInp.type = "text"; nameInp.value = it.n || ("Item " + (idx + 1));
+      nameInp.addEventListener("input", function(){ it.n = nameInp.value; saveBillSilently(); renderBill(); });
+      tdName.appendChild(nameInp); tr.appendChild(tdName);
+      
+      var tdVal = document.createElement("td"); tdVal.style.textAlign = "right";
+      // Show formula if exists
+      if (/[^0-9.]/.test(it.x)) {
+        var small = document.createElement("div"); small.style.fontSize = "0.75rem"; small.style.color = "#666"; small.textContent = it.s === "-" ? "−" + it.x : it.x;
+        tdVal.appendChild(small);
+      }
+      var numWrap = document.createElement("div");
+      var sg = document.createElement("span"); sg.textContent = it.s === "-" ? "−" : ""; sg.style.color = it.s === "-" ? "#a1281c" : "inherit";
+      var numInp = document.createElement("input"); numInp.className = "pdf-editable-num"; numInp.type = "text"; numInp.value = it.v;
+      numInp.addEventListener("input", function(){
+        var cleanVal = numInp.value.replace(/[^0-9.]/g, "");
+        it.v = cleanVal; it.x = cleanVal;
+        updatePdfTotals(); saveBillSilently(); renderBill();
       });
-    }
+      numWrap.appendChild(sg); numWrap.appendChild(numInp); tdVal.appendChild(numWrap);
+      tr.appendChild(tdVal);
+
+      var tdDel = document.createElement("td"); tdDel.className = "no-print-action"; tdDel.style.textAlign = "center";
+      var delBtn = document.createElement("button"); delBtn.className = "pdf-del-btn"; delBtn.textContent = "×";
+      delBtn.addEventListener("click", function(){ bill.items.splice(idx, 1); renderPdfPreviewContent(); renderBill(); });
+      tdDel.appendChild(delBtn); tr.appendChild(tdDel);
+
+      tbody.appendChild(tr);
+    });
 
     $("pdfAddNewRowBtn").addEventListener("click", function(){
-      if(!bill) bill = { items: [] };
-      bill.items.push({s: "+", x: "0", v: "0", n: ""});
-      renderPdfPreviewContent();
-      renderBill();
+      bill.items.push({id: Math.random().toString(36).substr(2, 9), s: "+", x: "0", v: "0", n: ""});
+      renderPdfPreviewContent(); renderBill();
     });
   }
 
   function updatePdfTotals(){
-    var total = itemsTotal(bill ? bill.items : []);
-    var wordsTotal = lang === "off" ? "" : wordsLine(total, DICT[lang]);
+    var total = itemsTotal(bill.items);
     if ($("pdfTotalVal")) $("pdfTotalVal").textContent = formatNum(splitNum(total));
-    if ($("pdfWordsVal")) $("pdfWordsVal").textContent = "In Words: " + wordsTotal;
+    if ($("pdfWordsVal")) $("pdfWordsVal").textContent = "In Words: " + (lang === "off" ? "" : wordsLine(total, DICT[lang]));
   }
 
   function openPdfPreview(){
-    if(!bill || !bill.items || !bill.items.length){ toast(t("noLines")); return; }
-    autoSaveCurrentBill();
+    if(!bill || !bill.items.length){ toast(t("noLines")); return; }
     renderPdfPreviewContent();
     $("pdfOverlay").classList.add("open");
   }
 
   $("billPdfBtn").addEventListener("click", openPdfPreview);
   $("pdfCloseAction").addEventListener("click", function(){ $("pdfOverlay").classList.remove("open"); });
+  $("billCloseBtn").addEventListener("click", function(){ sheet("bill", false); });
+  $("billBtn").addEventListener("click", openBillFromExpr);
 
-  /* [बग सुधारा गया]: सुरक्षित शेयर और फॉलबैक लॉजिक */
+  // ===== शेयर, डाउनलोड, प्रिंट =====
   $("pdfShareAction").addEventListener("click", function(){
-    var total = itemsTotal(bill ? bill.items : []);
     var shop = $("billShop").value.trim() || "Bill";
-    var text = "*" + shop + "*\nTotal: " + formatNum(splitNum(total)) + "\nGenerated via Shabd Calculator";
-    
+    var text = "*" + shop + "*\nTotal: " + formatNum(splitNum(itemsTotal(bill.items))) + "\nGenerated via Shabd Calculator";
     if (navigator.share) {
-      navigator.share({
-        title: shop,
-        text: text
-      }).catch(function(err){
-        if(err.name !== "AbortError"){
-          var whatsappUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
-          window.open(whatsappUrl, "_blank");
-        }
-      });
+      navigator.share({ title: shop, text: text }).catch(function(){});
     } else {
-      var whatsappUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
-      var win = window.open(whatsappUrl, "_blank");
-      if(!win){
-        copyText(text).then(function(ok){
-          toast(ok ? "Bill details copied to clipboard!" : t("copyFail"));
-        });
-      }
+      copyText(text).then(function(ok){ toast(ok ? "Copied!" : "Failed"); });
     }
   });
 
-  /* PDF Download Function using html2pdf */
   $("pdfDownloadAction").addEventListener("click", function(){
-    var element = document.getElementById('pdfContentToPrint');
+    if(typeof html2pdf === "undefined") { toast(t("pdfLibErr")); return; }
+    var element = $("pdfContentToPrint");
+    var clone = element.cloneNode(true);
+    clone.classList.add("pdf-export-mode");
     
-    var noPrints = element.querySelectorAll(".no-print-action");
-    noPrints.forEach(function(el){ el.style.display = "none"; });
-
     var opt = {
-      margin:       0.3,
+      margin:       [0.5, 0.5, 0.5, 0.5],
       filename:     'Bill_' + Date.now() + '.pdf',
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true },
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
-    
-    toast("Downloading PDF...");
-    
-    if(typeof html2pdf !== "undefined") {
-      html2pdf().set(opt).from(element).save().then(function(){
-        noPrints.forEach(function(el){ el.style.display = ""; });
-      }).catch(function(){
-        noPrints.forEach(function(el){ el.style.display = ""; });
-        toast("Download failed");
-      });
-    } else {
-      noPrints.forEach(function(el){ el.style.display = ""; });
-      toast("PDF library not loaded");
-    }
+    toast(t("downloading"));
+    html2pdf().set(opt).from(clone).save();
   });
 
-  /* [बग सुधारा गया]: प्रिंट करने पर पूरी स्क्रीन रीलोड होने के बजाय window.print() का सेफ उपयोग */
   $("pdfPrintAction").addEventListener("click", function(){
-    window.print();
+    var element = $("pdfContentToPrint");
+    var clone = element.cloneNode(true);
+    clone.classList.add("pdf-export-mode");
+    
+    // Print via hidden iframe (No page reload!)
+    var iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed'; iframe.style.right = '0'; iframe.style.bottom = '0';
+    iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    
+    var doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write('<html><head><title>Print Bill</title>');
+    // Copy CSS from parent
+    var styles = document.querySelectorAll('style');
+    styles.forEach(function(s){ doc.write('<style>' + s.innerHTML + '</style>'); });
+    doc.write('</head><body class="pdf-export-mode" style="background:#fff;">');
+    doc.write(clone.outerHTML);
+    doc.write('</body></html>');
+    doc.close();
+    
+    setTimeout(function(){
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(function(){ document.body.removeChild(iframe); }, 2000);
+    }, 500);
   });
 
-  $("billBtn").addEventListener("click", openBillFromExpr);
-  $("billCloseBtn").addEventListener("click", function(){ sheet("bill", false); });
-
+  // ===== हिस्ट्री रेंडर =====
   function renderHistory(){
     var list = $("list"); list.innerHTML = "";
-    if (!storageOk) list.appendChild(el("div", "empty", t("noStore")));
-    if (!records.length){ list.appendChild(el("div", "empty", t("noHist"))); return; }
+    if (!records.length){ list.innerHTML = '<div style="text-align:center;color:var(--panel-sub);padding:20px;">कोई हिस्ट्री नहीं है।</div>'; return; }
     records.forEach(function(h){
       var b = el("button", "item"); b.type = "button";
       if (h.k === "bill"){
         var head = el("div", "ttl"), who = h.customer || h.shop || h.seller || t("billTag");
         head.appendChild(el("span", "", who)); head.appendChild(el("span", "tag", t("billTag")));
         b.appendChild(head);
-        var sub = [h.shop, h.seller].filter(function(x){ return x && x !== who; }).join(" · ");
-        if (sub) b.appendChild(el("small", "", sub));
         b.appendChild(el("small", "", h.items.length + " " + t("lines")));
         b.appendChild(el("b", "", formatNum(splitNum(h.r))));
         b.addEventListener("click", function(){ sheet("hist", false); openBillRecord(h); });
       } else {
-        if (h.name) b.appendChild(el("div", "ttl", h.name));
         b.appendChild(el("small", "", prettyExpr(h.e) + " ="));
         b.appendChild(el("b", "", formatNum(splitNum(h.r))));
         b.addEventListener("click", function(){
-          endSession(); trail = []; expr = h.r; cur = expr.length; result = null; err = "";
+          endSession(); expr = h.r; cur = expr.length; result = null; inputEl.value = expr;
           sheet("hist", false); render(); saveState();
         });
       }
@@ -1128,103 +1043,72 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     });
   }
 
-  function svg(inner){
-    return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
-  }
+  // ===== सेटिंग्स और थीम =====
+  function svg(inner){ return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>'; }
   var MOON = svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>');
   var SUN = svg('<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>');
   function isDark(){ return themeMode === "dark" || (themeMode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches); }
-  function applyTheme(){
-    var d = isDark();
-    document.documentElement.setAttribute("data-theme", d ? "dark" : "light");
-    $("themeBtn").innerHTML = d ? SUN : MOON;
-    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", d ? "#1d2e58" : "#e8ecf4");
-  }
-  function setTheme(m){ themeMode = m; lsSet(TKEY, m); applyTheme(); }
-  try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){ if (themeMode === "auto") applyTheme(); }); } catch(e){}
+  function applyTheme(){ document.documentElement.setAttribute("data-theme", isDark() ? "dark" : "light"); $("themeBtn").innerHTML = isDark() ? SUN : MOON; }
+  $("themeBtn").addEventListener("click", function(){ themeMode = isDark() ? "light" : "dark"; lsSet(TKEY, themeMode); applyTheme(); });
 
+  // Audio & Vibration
   var audioCtx = null;
   function beep(k){
     if (!soundOn) return;
     try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
       if (!audioCtx) audioCtx = new AC();
-      if (audioCtx.state === "suspended") audioCtx.resume();
       var now = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.type = "sine";
-      o.frequency.setValueAtTime(k === "=" ? 880 : "+-*/".indexOf(k) !== -1 ? 660 : (k === "C" || k === "B") ? 440 : 760, now);
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(0.18, now + 0.005);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start(now); o.stop(now + 0.07);
+      o.type = "sine"; o.frequency.setValueAtTime(k === "=" ? 880 : "+-*/".indexOf(k) !== -1 ? 660 : 760, now);
+      g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.18, now + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+      o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now + 0.07);
     } catch(e){}
   }
-  function feedback(k){
-    if (!soundOn) return;
-    try { if (navigator.vibrate) navigator.vibrate(8); } catch(e){}
-    beep(k);
-  }
+  function feedback(k){ if (soundOn) { try { navigator.vibrate && navigator.vibrate(8); } catch(e){} } beep(k); }
 
   function sheet(id, open){ $(id).classList.toggle("open", open); }
-  function mark(id, attr, isOn){
-    Array.prototype.forEach.call($(id).children, function(b){ b.classList.toggle("on", isOn(b.getAttribute(attr))); });
-  }
-  function syncOpts(){
-    mark("optLang", "data-l", function(v){ return v === lang; });
-    mark("optSound", "data-s", function(v){ return (v === "on") === soundOn; });
-  }
-  function setLang(l){
-    lang = l;
-    if (l === "hi" || l === "en") uiLang = l;
-    lsSet(LKEY, lang); lsSet(UKEY, uiLang);
-    syncOpts(); applyUi(); render();
-  }
+  function mark(id, attr, isOn){ Array.prototype.forEach.call($(id).children, function(b){ b.classList.toggle("on", isOn(b.getAttribute(attr))); }); }
+  function syncOpts(){ mark("optLang", "data-l", function(v){ return v === lang; }); mark("optSound", "data-s", function(v){ return (v === "on") === soundOn; }); }
+  function setLang(l){ lang = l; if (l === "hi" || l === "en") uiLang = l; lsSet(LKEY, lang); lsSet(UKEY, uiLang); syncOpts(); applyUi(); render(); }
   function setSound(on){ soundOn = on; lsSet(SKEY, on ? "on" : "off"); syncOpts(); beep("5"); }
 
-  function on(id, fn){ $(id).addEventListener("click", fn); }
-  function onPick(id, attr, fn){
-    on(id, function(ev){ var b = ev.target.closest("button[" + attr + "]"); if (b) fn(b.getAttribute(attr)); });
-  }
-  onPick("pad", "data-k", function(k){ feedback(k); press(k); });
-  onPick("optLang", "data-l", setLang);
-  onPick("optSound", "data-s", function(v){ setSound(v === "on"); });
-  on("themeBtn", function(){ setTheme(isDark() ? "light" : "dark"); });
-  on("gearBtn", function(){ syncOpts(); sheet("settings", true); });
-  on("openHist", function(){ sheet("settings", false); renderHistory(); sheet("hist", true); });
-  on("setClose", function(){ sheet("settings", false); });
-  on("histClose", function(){ sheet("hist", false); });
-  on("histClear", function(){ records = []; saveRecords(); renderHistory(); });
+  $("gearBtn").addEventListener("click", function(){ syncOpts(); sheet("settings", true); });
+  $("openHist").addEventListener("click", function(){ sheet("settings", false); renderHistory(); sheet("hist", true); });
+  $("setClose").addEventListener("click", function(){ sheet("settings", false); });
+  $("histClose").addEventListener("click", function(){ sheet("hist", false); });
+  $("histClear").addEventListener("click", function(){ if(confirm("साफ करें?")){ records = []; saveRecords(); renderHistory(); } });
   ["settings", "hist", "bill"].forEach(function(id){
-    on(id, function(ev){ if (ev.target === $(id)) sheet(id, false); });
+    $(id).addEventListener("click", function(ev){ if (ev.target === $(id)) sheet(id, false); });
+  });
+  document.querySelectorAll("#optLang button").forEach(function(b){
+    b.addEventListener("click", function(e){ setLang(e.target.getAttribute("data-l")); });
+  });
+  document.querySelectorAll("#optSound button").forEach(function(b){
+    b.addEventListener("click", function(e){ setSound(e.target.getAttribute("data-s") === "on"); });
+  });
+  $("pad").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-k]");
+    if (btn) { feedback(btn.getAttribute("data-k")); press(btn.getAttribute("data-k")); }
   });
 
+  // Global Keyboard
   document.addEventListener("keydown", function(ev){
+    if ($("pdfOverlay").classList.contains("open")) {
+      if (ev.key === "Escape") $("pdfOverlay").classList.remove("open");
+      return;
+    }
     if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.defaultPrevented) return;
+    if (document.activeElement === inputEl) return; // allow native typing
     var open = document.querySelector(".overlay.open");
     if (ev.key === "Escape"){ if (open){ open.classList.remove("open"); ev.preventDefault(); } return; }
     if (open || (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName))) return;
-    if (ev.target && ev.target.tagName === "BUTTON" && (ev.key === "Enter" || ev.key === " ")) return;
-    var map = {"0":"0","1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9", ".":".", ",":".",
-               "+":"+","-":"-","*":"*","/":"/","%":"%","Enter":"=","=":"=","Backspace":"B","Delete":"C","c":"C","C":"C"};
-    if (map[ev.key]){ ev.preventDefault(); feedback(map[ev.key]); press(map[ev.key]); return; }
-    if (ev.key === "ArrowLeft" && cur > 0){ cur--; render(); saveState(); ev.preventDefault(); }
-    if (ev.key === "ArrowRight" && cur < expr.length){ cur++; render(); saveState(); ev.preventDefault(); }
+    var map = {"0":"0","1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9", ".":".", "+":"+","-":"-","*":"*","x":"*","X":"*","/":"/","%":"%","Enter":"=","=":"=","Backspace":"B","Delete":"C","c":"C","C":"C"};
+    if (map[ev.key]) { ev.preventDefault(); feedback(map[ev.key]); press(map[ev.key]); }
   });
-  window.addEventListener("resize", render);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
 
   Array.prototype.forEach.call(document.querySelectorAll(".key"), function(k, i){ k.style.setProperty("--i", i); });
-  applyTheme();
-  applyUi();
-  render();
+  applyTheme(); applyUi(); loadState(); fitInput(); render();
 })();
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
-}
 </script>
 </body>
 </html>
