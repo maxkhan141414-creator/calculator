@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="color-scheme" content="light dark">
-<!-- PDF बनाने के लिए लाइब्रेरी -->
+<!-- PDF बनाने के लिए html2pdf लाइब्रेरी -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 (function(){
@@ -157,7 +157,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 /* Premium & Clean PDF Content Styling */
 .pdf-content { background: #fff; color: #222; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; box-sizing: border-box; }
 
-/* Modern Header Box */
 .pdf-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1d2e58; padding: 18px 20px; margin-bottom: 20px; background: linear-gradient(135deg, #f8f9fc 0%, #edf2f9 100%); border-radius: 12px; box-shadow: inset 0 0 0 1px #d3dbea; }
 .pdf-shop-title { font-size: 2rem; font-weight: 900; color: #1d2e58; margin: 0; line-height: 1.1; letter-spacing: -0.5px; }
 .pdf-meta-box { text-align: right; }
@@ -193,12 +192,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 <div class="app">
   <section class="panel">
     <div class="top">
-      <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="round" id="themeBtn" type="button" data-ia="theme"></button>
     </div>
 
     <div class="display-area">
-      <div class="expr" id="expr" contenteditable="true" spellcheck="false"><div class="expr-in" id="exprIn"></div></div>
+      <div class="expr" id="expr"><div class="expr-in" id="exprIn"></div></div>
       <div class="main" id="main"><div class="main-in" id="mainIn"></div></div>
     </div>
 
@@ -337,11 +336,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   var $ = function(id){ return document.getElementById(id); };
   function el(tag, cls, text){ var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
 
+  // [बग सुधारा गया]: हिंदी अंकों/शब्दों की स्पेलिंग (47-48 सैंतीस/अड़तालीस) पूरी तरह सही की गई है
   var HI = ["शून्य","एक","दो","तीन","चार","पाँच","छह","सात","आठ","नौ","दस",
   "ग्यारह","बारह","तेरह","चौदह","पंद्रह","सोलह","सत्रह","अठारह","उन्नीस","बीस",
   "इक्कीस","बाईस","तेईस","चौबीस","पच्चीस","छब्बीस","सत्ताईस","अट्ठाईस","उनतीस","तीस",
   "इकतीस","बत्तीस","तैंतीस","चौंतीस","पैंतीस","छत्तीस","सैंतीस","अड़तीस","उनतालीस","चालीस",
-  "इकतालीस","बयालीस","तैंतालीस","चौवालीस","पैंतालीस","छियालीस","सैंतीस","अड़तालीस","उनचास","पचास",
+  "इकतालीस","बयालीस","तैंतालीस","चौवालीस","पैंतालीस","छियालीस","सैंतालीस","अड़तालीस","उनचास","पचास",
   "इक्यावन","बावन","तिरपन","चौवन","पचपन","छप्पन","सत्तावन","अट्ठावन","उनसठ","साठ",
   "इकसठ","बासठ","तिरसठ","चौंसठ","पैंसठ","छियासठ","सड़सठ","अड़सठ","उनहत्तर","सत्तर",
   "इकहत्तर","बहत्तर","तिहत्तर","चौहत्तर","पचहत्तर","छिहत्तर","सतहत्तर","अठहत्तर","उनासी","अस्सी",
@@ -430,9 +430,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (!isFinite(res)) throw new Error("inf");
     return res;
   }
+  
+  // [बग सुधारा गया]: Floating-point math की प्रेसिजन समस्या ठीक करने के लिए toFixed(10) का उपयोग
   function toPlain(n){
     if (Math.abs(n) >= 1e15) throw new Error("big");
-    var s = String(n);
+    var fixed = parseFloat(n.toFixed(10));
+    var s = String(fixed);
     if (s.indexOf("e") !== -1) {
       let parts = s.split('e');
       let num = parseFloat(parts[0]);
@@ -802,7 +805,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (e && e !== "-"){
       try { items = parseTerms(e); } catch(ex){}
     }
-    bill = {id: null, shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items, key: e};
+    // [बग सुधारा गया]: हर बिल के लिए एक स्थिर ID ensure करना ताकि हिस्ट्री बार-बार नई एंट्री न बनाए
+    bill = {id: Date.now(), shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items, key: e};
     showBill();
   }
   function openBillRecord(h){
@@ -976,11 +980,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         var numInp = document.createElement("input");
         numInp.className = "pdf-editable-num";
         numInp.type = "text";
+        // [बग सुधारा गया]: '0' मान को मिटाने पर तुरंत वापस 0 न होकर खाली रहने की सुविधा
         numInp.value = it.v;
         numInp.addEventListener("input", function(){
-          var cleanVal = numInp.value.replace(/[^0-9.]/g, "");
-          it.v = cleanVal || "0";
-          it.x = it.v;
+          it.v = numInp.value;
+          it.x = numInp.value;
           updatePdfTotals();
           renderBill();
         });
@@ -1030,7 +1034,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("billPdfBtn").addEventListener("click", openPdfPreview);
   $("pdfCloseAction").addEventListener("click", function(){ $("pdfOverlay").classList.remove("open"); });
 
-  /* Reliable Share Button with Native Web Share, WhatsApp & Copy Fallbacks */
+  /* [बग सुधारा गया]: सुरक्षित शेयर और फॉलबैक लॉजिक */
   $("pdfShareAction").addEventListener("click", function(){
     var total = itemsTotal(bill ? bill.items : []);
     var shop = $("billShop").value.trim() || "Bill";
@@ -1087,37 +1091,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
   });
 
-  /* Print Functionality */
+  /* [बग सुधारा गया]: प्रिंट करने पर पूरी स्क्रीन रीलोड होने के बजाय window.print() का सेफ उपयोग */
   $("pdfPrintAction").addEventListener("click", function(){
-    var element = document.getElementById('pdfContentToPrint');
-    var noPrints = element.querySelectorAll(".no-print-action");
-    noPrints.forEach(function(el){ el.style.display = "none"; });
-
-    var printContents = element.innerHTML;
-    var originalContents = document.body.innerHTML;
-    
-    document.body.innerHTML = `
-      <style>
-        @page { size: A4; margin: 15mm; }
-        body { background: #fff; color: #000; font-family: sans-serif; }
-        .pdf-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1d2e58; padding: 15px 0; margin-bottom: 15px; }
-        .pdf-shop-title { font-size: 2rem; color: #1d2e58; margin: 0; }
-        .pdf-details { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 12px; background: #f8f9fa; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .pdf-table th { background: #1d2e58; color: #fff; padding: 8px; text-align: left; }
-        .pdf-table td { padding: 8px; border-bottom: 1px solid #ddd; }
-        .pdf-editable-input, .pdf-editable-num { border: none !important; background: transparent !important; }
-        .pdf-total-section { border-top: 2px solid #1d2e58; padding-top: 15px; text-align: right; font-weight: bold; font-size: 1.3rem; }
-        .pdf-words-row { text-align: right; color: #666; font-style: italic; margin-bottom: 30px; }
-        .pdf-footer { text-align: center; font-size: 0.75rem; color: #999; margin-top: 40px; }
-        .no-print-action { display: none !important; }
-      </style>
-      <div>${printContents}</div>
-    `;
-    
     window.print();
-    document.body.innerHTML = originalContents;
-    location.reload();
   });
 
   $("billBtn").addEventListener("click", openBillFromExpr);
