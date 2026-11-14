@@ -1,0 +1,168 @@
+/* ===== रंग ===== */
+:root{
+  --bg:#e8ecf4; --p1:#ffffff; --p2:#eef2f9; --panel-text:#000000; --panel-sub:#55627f; --gold:#8a4b00;
+  --panel-line:#d3dbea; --panel-shadow:0 8px 20px rgba(30,50,100,.13); --soft:rgba(10,20,50,.07);
+  --key:#ffffff; --key-text:#14213d; --edge:#c5cee0; --op:#d9e1f1; --op-text:#14213d; --op-edge:#b8c4de;
+  --action:#e2e8f0; --action-text:#3b4b6b;
+  --clear:#fde2de; --clear-text:#a1281c; --clear-edge:#f0bdb6;
+  --eq:#f0a82a; --eq-text:#1a1203; --eq-edge:#b97b0c; --opc:#b45f06;
+  color-scheme: light;
+}
+:root[data-theme="dark"]{
+  --bg:#090d18; --p1:#1d2e58; --p2:#0f182f; --panel-text:#ffffff; --panel-sub:#a9b8d8; --gold:#ffd98a;
+  --panel-line:#26376a; --panel-shadow:0 10px 24px rgba(0,0,0,.4); --soft:rgba(255,255,255,.09);
+  --key:#1b2542; --key-text:#f1f4fb; --edge:#0d1426; --op:#27345a; --op-text:#f1f4fb; --op-edge:#141c36;
+  --action:#1d2a4a; --action-text:#a9b8d8;
+  --clear:#472022; --clear-text:#ffb4aa; --clear-edge:#26100f; --opc:#f0a82a;
+  color-scheme: dark;
+}
+
+/* ===== बेस ===== */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg); font-family:"Noto Sans Devanagari","Mukta",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--key-text); padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.app{max-width:480px;height:100%;margin:0 auto;display:flex;flex-direction:column;padding:10px;gap:12px}
+button{touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-offset:2px}
+
+/* ===== डिस्प्ले ===== */
+.panel{background:linear-gradient(160deg,var(--p1),var(--p2));color:var(--panel-text);border:1px solid var(--panel-line);border-radius:24px;padding:14px;box-shadow:var(--panel-shadow);display:flex;flex-direction:column;min-height:42%}
+.top{display:flex;align-items:center;gap:8px}
+.round{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--soft);color:var(--panel-text);display:grid;place-items:center;cursor:pointer}
+.display-area{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:6px 2px}
+.expr,.main{width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
+.expr::-webkit-scrollbar,.main::-webkit-scrollbar{display:none}
+.expr{font-size:3.2rem;font-weight:500;line-height:1.15;cursor:text;color:var(--panel-text)}
+.expr-in,.main-in{display:inline-block;min-width:100%;text-align:right}
+.ph{color:var(--panel-sub);opacity:.5}
+.ch.op,.ch.pc{color:var(--opc);font-weight:700}
+.cm{opacity:.9}
+.eqs{color:var(--opc)}
+.cur{display:inline-block;width:2px;height:1em;margin:0 1px 0 -1px;background:var(--opc);vertical-align:-.12em;border-radius:1px}
+@media (prefers-reduced-motion:no-preference){.cur{animation:blink 1.06s steps(1) infinite}}
+@keyframes blink{50%{opacity:0}}
+.main{font-size:2.2rem;font-weight:500;line-height:1.2;min-height:1.2em;color:var(--panel-sub)}
+.main.final{color:var(--panel-text);font-weight:700}
+.main.bad{color:var(--clear-text);font-size:1.3rem}
+.words-container{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;min-height:3em;border-top:1px solid var(--soft);padding-top:10px}
+.words{flex:1;min-width:0;text-align:left;font-size:1.25rem;line-height:1.4;color:var(--gold);font-weight:600;overflow-wrap:anywhere}
+.actions-small{display:flex;gap:5px;flex:none}
+.icon-btn{width:34px;height:34px;border:0;border-radius:50%;background:var(--soft);color:var(--panel-sub);display:grid;place-items:center;cursor:pointer}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn.speaking svg{animation:speakAnim .6s ease-in-out infinite alternate}
+@keyframes speakAnim{0%{transform:scale(1);opacity:1}100%{transform:scale(1.25);opacity:.7}}
+
+/* ===== कीपैड ===== */
+.pad{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:10px}
+.key{border:0;border-radius:18px;background:var(--key);color:var(--key-text);font:inherit;font-size:1.6rem;font-weight:600;cursor:pointer;box-shadow:0 4px 0 var(--edge);display:flex;align-items:center;justify-content:center}
+.key:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.key.op{background:var(--op);color:var(--op-text);box-shadow:0 4px 0 var(--op-edge);font-size:1.8rem}
+.key.op:active{box-shadow:0 1px 0 var(--op-edge)}
+.key.action{background:var(--action);color:var(--action-text);font-size:1.3rem}
+.key.clear{background:var(--clear);color:var(--clear-text);box-shadow:0 4px 0 var(--clear-edge)}
+.key.clear:active{box-shadow:0 1px 0 var(--clear-edge)}
+.key.eq{background:var(--eq);color:var(--eq-text);box-shadow:0 4px 0 var(--eq-edge);font-size:2rem}
+.key.eq:active{box-shadow:0 1px 0 var(--eq-edge)}
+
+/* ===== खुलते समय की एनिमेशन (सिर्फ़ एक बार) ===== */
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  .panel{animation:rise .45s cubic-bezier(.2,.8,.2,1) backwards}
+  .key{animation:pop .38s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i, 0) * 14ms + 110ms);transition:transform .07s,box-shadow .07s}
+}
+
+/* ===== नीचे से खुलने वाले पैनल ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.overlay.open{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:480px;max-height:92%;overflow-y:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;box-shadow:0 -5px 20px rgba(0,0,0,.2)}
+.sheet h2{margin:0;font-size:1.25rem;color:var(--panel-text)}
+.group{display:flex;flex-direction:column;gap:8px;background:var(--p1);padding:12px;border-radius:16px;border:1px solid var(--panel-line)}
+.label{color:var(--panel-sub);font-size:.95rem;font-weight:600}
+.opts,.actions{display:flex;gap:8px}
+.opts button,.actions button,.wide{border:0;border-radius:12px;padding:12px 8px;font:inherit;font-size:1rem;font-weight:600;cursor:pointer;background:var(--op);color:var(--op-text)}
+.opts button,.actions button{flex:1}
+.opts button.on{background:var(--eq);color:var(--eq-text)}
+.actions .danger{background:var(--clear);color:var(--clear-text)}
+.wide{width:100%}
+.empty{color:var(--panel-sub);text-align:center;padding:16px 0}
+
+/* ===== हिस्ट्री ===== */
+.list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;max-height:46vh}
+.item{background:var(--key);border:0;border-radius:12px;padding:12px;text-align:right;font:inherit;color:var(--key-text);cursor:pointer;box-shadow:0 2px 0 var(--edge);width:100%}
+.item .ttl{display:flex;justify-content:space-between;gap:8px;color:var(--gold);font-weight:700;text-align:left}
+.item .tag{font-size:.7rem;background:var(--soft);color:var(--panel-sub);border-radius:6px;padding:2px 6px;align-self:center;flex:none}
+.item small{display:block;color:var(--panel-sub);font-size:.85rem;margin-top:3px;overflow-wrap:anywhere}
+.item b{font-size:1.2rem;color:var(--panel-text)}
+
+/* ===== बिल वाला पन्ना ===== */
+.bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bdate{color:var(--panel-sub);font-size:.8rem;text-align:right}
+.bill-actions-top{display:flex;gap:8px;align-items:center}
+.pdf-btn-main{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border:0;border-radius:12px;background:var(--eq);color:var(--eq-text);font:inherit;font-size:1rem;font-weight:700;cursor:pointer}
+.x-btn{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:var(--clear);color:var(--clear-text);font-size:1.3rem;line-height:1;cursor:pointer}
+.fld{width:100%;min-width:0;border:1px solid var(--panel-line);background:var(--p1);color:var(--panel-text);border-radius:12px;padding:11px 12px;font:inherit;font-size:1rem}
+.fld::placeholder{color:var(--panel-sub)}
+.frow{display:flex;gap:8px}
+.paper{background:var(--p1);border:1px solid var(--panel-line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px dashed var(--panel-line)}
+.bname-wrap{flex:1;min-width:0;display:flex;gap:6px;align-items:center}
+.bname{flex:1;min-width:0;padding:8px 10px;font-size:.95rem}
+.addItemBtn{flex:none;width:40px;height:40px;border-radius:10px;background:var(--eq);color:var(--eq-text);border:0;font-size:1.4rem;font-weight:700;cursor:pointer;display:grid;place-items:center}
+.bnum{flex:0 0 38%;min-width:112px;border:1px solid var(--panel-line);border-radius:10px;padding:4px 8px;background:var(--bg);color:var(--panel-text);overflow:hidden}
+.bline{display:flex;align-items:center;gap:4px}
+.bsg{flex:none;border:0;background:transparent;color:var(--opc);font:inherit;font-size:1.1rem;font-weight:700;cursor:pointer;padding:0 2px}
+.bsg.neg{color:var(--clear-text)}
+.bamt{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--panel-text);font:inherit;font-size:1.1rem;font-weight:700;text-align:right;padding:2px 0}
+.bamt::placeholder{color:var(--panel-sub);opacity:.6}
+.bnum small{display:block;color:var(--panel-sub);font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdel{flex:none;width:32px;height:32px;border:0;border-radius:50%;background:var(--clear);color:var(--clear-text);font-size:1.25rem;line-height:1;cursor:pointer}
+/* कुल: नाम डिब्बे के बाहर, डिब्बा छोटा; संख्या बीच में, शब्द दाएँ कोने में */
+.total-wrapper{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:4px}
+.total-label{font-weight:700;font-size:1.05rem;color:var(--panel-text)}
+.total-content{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;width:100%;max-width:360px;background:var(--bg);border:1px solid var(--panel-line);border-radius:12px;padding:6px 10px}
+.tc-num{grid-column:2;text-align:center;font-weight:700;font-size:1.35rem;color:var(--panel-text);white-space:nowrap}
+.tc-words{grid-column:3;text-align:right;color:var(--gold);font-weight:600;font-size:.8rem;line-height:1.2;overflow-wrap:anywhere}
+
+/* ===== PDF वाला पूरा पर्दा ===== */
+.pdf-overlay{position:fixed;inset:0;background:#2b2f38;display:none;flex-direction:column;z-index:100}
+.pdf-overlay.open{display:flex}
+.pdf-bar{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 10px;background:#1d2e58;color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.35);border-bottom:3px solid #f0a82a}
+.pdf-title{flex:1;min-width:0;font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-tools{display:flex;gap:6px}
+.pbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:58px;height:52px;padding:0 6px;border:0;border-radius:14px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:.7rem;font-weight:600;cursor:pointer}
+.pbtn:active{transform:scale(.94);background:rgba(255,255,255,.25)}
+.pbtn.primary{background:#f0a82a;color:#1a1203}
+.pbtn.close{min-width:44px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14)}
+.pdf-body{flex:1;overflow-y:auto;padding:16px 10px 40px;display:flex;justify-content:center}
+.pdf-pages{width:100%;max-width:620px;display:flex;flex-direction:column;gap:16px}
+.pdf-pages canvas{display:block;width:100%;height:auto;background:#fff;border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+
+/* ===== PDF के डिज़ाइन चुनने की पट्टी ===== */
+.pdf-designs{display:flex;gap:8px;padding:8px 10px;overflow-x:auto;background:#232733;scrollbar-width:none}
+.pdf-designs::-webkit-scrollbar{display:none}
+.dchip{flex:none;display:flex;align-items:center;gap:8px;border:2px solid transparent;border-radius:999px;padding:6px 14px 6px 10px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer}
+.dchip[aria-pressed="true"]{border-color:#f0a82a;background:rgba(240,168,42,.18)}
+.dchip .sw{display:flex}
+.dchip .sw i{width:18px;height:18px;border-radius:50%;border:2px solid #232733;margin-left:-6px}
+.dchip .sw i:first-child{margin-left:0}
+
+/* ===== छोटा संदेश ===== */
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);transform:translateX(-50%) translateY(10px);background:#14213d;color:#fff;padding:10px 16px;border-radius:999px;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:300;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== प्रिंट: सिर्फ़ बिल के पन्ने (printBill body पर "printing" लगाता है) ===== */
+@media print{
+  @page{size:A4;margin:0}
+  html,body{height:auto !important}
+  body.printing{background:#fff !important}
+  body.printing .app,body.printing .overlay,body.printing .toast,body.printing .pdf-bar,body.printing .pdf-designs{display:none !important}
+  body.printing .pdf-overlay{position:static !important;display:block !important;background:#fff !important}
+  body.printing .pdf-body{padding:0 !important;overflow:visible !important;display:block !important}
+  body.printing .pdf-pages{max-width:none !important;gap:0 !important;display:block !important}
+  body.printing .pdf-pages canvas{width:100% !important;height:auto !important;border-radius:0 !important;box-shadow:none !important;break-after:page;page-break-after:always}
+  body.printing .pdf-pages canvas:last-child{break-after:auto;page-break-after:auto}
+}
