@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d2e58">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="color-scheme" content="light dark">
+<script>
+// पहली स्क्रीन बनने से पहले ही सही थीम लगाना, ताकि रंग चमके नहीं
+(function(){
+  try {
+    var m = localStorage.getItem("shabd_calc_theme");
+    var dark = m === "dark" || (m !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  } catch(e){}
+})();
+</script>
+<title>Billing Calculator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <section class="panel">
+    <div class="top">
+      <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="round" id="themeBtn" type="button" data-ia="theme"></button>
+    </div>
+
+    <div class="display-area">
+      <div class="expr" id="expr"><div class="expr-in" id="exprIn"></div></div>
+      <div class="main" id="main"><div class="main-in" id="mainIn"></div></div>
+    </div>
+
+    <div class="words-container">
+      <div class="words" id="words" aria-live="polite"></div>
+      <div class="actions-small">
+        <button class="icon-btn" id="billBtn" type="button" data-ia="billBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></button>
+        <button class="icon-btn" id="speakBtn" type="button" data-ia="speakBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+        <button class="icon-btn" id="copyBtn" type="button" data-ia="copyBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        <button class="icon-btn" id="pasteBtn" type="button" data-ia="pasteBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="pad" id="pad">
+    <button class="key clear" data-k="C" type="button">AC</button>
+    <button class="key action" data-k="B" type="button" data-ia="erase">⌫</button>
+    <button class="key action" data-k="%" type="button">%</button>
+    <button class="key op" data-k="/" type="button">÷</button>
+
+    <button class="key" data-k="7" type="button">7</button>
+    <button class="key" data-k="8" type="button">8</button>
+    <button class="key" data-k="9" type="button">9</button>
+    <button class="key op" data-k="*" type="button">×</button>
+
+    <button class="key" data-k="4" type="button">4</button>
+    <button class="key" data-k="5" type="button">5</button>
+    <button class="key" data-k="6" type="button">6</button>
+    <button class="key op" data-k="-" type="button">−</button>
+
+    <button class="key" data-k="1" type="button">1</button>
+    <button class="key" data-k="2" type="button">2</button>
+    <button class="key" data-k="3" type="button">3</button>
+    <button class="key op" data-k="+" type="button">+</button>
+
+    <button class="key action" data-k="+/-" type="button">+/−</button>
+    <button class="key" data-k="0" type="button">0</button>
+    <button class="key" data-k="." type="button">.</button>
+    <button class="key eq" data-k="=" type="button">=</button>
+  </section>
+</div>
+
+<!-- सेटिंग्स -->
+<div class="overlay" id="settings">
+  <div class="sheet" role="dialog" data-ia="settings">
+    <h2 data-i="settings"></h2>
+    <div class="group">
+      <div class="label" data-i="langLabel"></div>
+      <div class="opts" id="optLang">
+        <button type="button" data-l="hi">हिंदी</button>
+        <button type="button" data-l="en">English</button>
+        <button type="button" data-l="off" data-i="off"></button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="label" data-i="soundLabel"></div>
+      <div class="opts" id="optSound">
+        <button type="button" data-s="on" data-i="soundOn"></button>
+        <button type="button" data-s="off" data-i="soundOff"></button>
+      </div>
+    </div>
+    <button type="button" class="wide" id="openHist" data-i="viewHist"></button>
+    <div class="actions"><button type="button" id="setClose" data-i="close"></button></div>
+  </div>
+</div>
+
+<!-- हिस्ट्री -->
+<div class="overlay" id="hist">
+  <div class="sheet" role="dialog" data-ia="history">
+    <h2 data-i="histTitle"></h2>
+    <div class="list" id="list"></div>
+    <div class="actions">
+      <button type="button" id="histClear" class="danger" data-i="clearHist"></button>
+      <button type="button" id="histClose" data-i="close"></button>
+    </div>
+  </div>
+</div>
+
+<!-- बिल / नाम के साथ हिसाब -->
+<div class="overlay" id="bill">
+  <div class="sheet" role="dialog" data-ia="billTitle">
+    <div class="bhead"><h2 data-i="billTitle"></h2><span class="bdate" id="billDate"></span></div>
+    <div class="bill-actions-top">
+      <button type="button" id="billPdfBtn" class="pdf-btn-main"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span data-i="pdfBtn"></span></button>
+      <button type="button" id="billCloseBtn" class="x-btn" data-ia="close">✕</button>
+    </div>
+    <input class="fld" id="billShop" type="text" maxlength="50" autocomplete="off" data-ph="shopPh">
+    <div class="frow">
+      <input class="fld" id="billSeller" type="text" maxlength="40" autocomplete="off" data-ph="sellerPh">
+      <input class="fld" id="billCustomer" type="text" maxlength="40" autocomplete="off" data-ph="customerPh">
+    </div>
+    <div class="paper">
+      <div id="billItems"></div>
+      <div class="total-wrapper">
+        <div class="total-label" data-i="total"></div>
+        <div class="total-content">
+          <div class="tc-num" id="billTotal">0</div>
+          <div class="tc-words" id="billWords"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDF पन्ना -->
+<div class="pdf-overlay" id="pdfOverlay">
+  <div class="pdf-bar">
+    <button class="pbtn close" id="pdfCloseAction" type="button" data-ia="close"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="pdf-title" id="pdfTitle"></div>
+    <div class="pdf-tools">
+      <button class="pbtn" id="pdfShareAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg><span data-i="share"></span></button>
+      <button class="pbtn" id="pdfPrintAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span data-i="print"></span></button>
+      <button class="pbtn primary" id="pdfDownloadAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 21h14"/></svg><span data-i="download"></span></button>
+    </div>
+  </div>
+  <div class="pdf-designs" id="pdfDesigns" role="group" data-ia="designPick"></div>
+  <div class="pdf-body"><div class="pdf-pages" id="pdfPages"></div></div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+
+<script src="app.js" defer></script>
+</body>
+</html>
