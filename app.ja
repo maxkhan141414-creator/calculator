@@ -1,0 +1,1262 @@
+// Billing Calculator — सारा हिसाब, बिल और PDF का कोड
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  function el(tag, cls, text){ var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
+
+  // ===== 1. अंकों के शब्द =====
+  var HI = ["शून्य","एक","दो","तीन","चार","पाँच","छह","सात","आठ","नौ","दस",
+  "ग्यारह","बारह","तेरह","चौदह","पंद्रह","सोलह","सत्रह","अठारह","उन्नीस","बीस",
+  "इक्कीस","बाईस","तेईस","चौबीस","पच्चीस","छब्बीस","सत्ताईस","अट्ठाईस","उनतीस","तीस",
+  "इकतीस","बत्तीस","तैंतीस","चौंतीस","पैंतीस","छत्तीस","सैंतीस","अड़तीस","उनतालीस","चालीस",
+  "इकतालीस","बयालीस","तैंतालीस","चौवालीस","पैंतालीस","छियालीस","सैंतालीस","अड़तालीस","उनचास","पचास",
+  "इक्यावन","बावन","तिरपन","चौवन","पचपन","छप्पन","सत्तावन","अट्ठावन","उनसठ","साठ",
+  "इकसठ","बासठ","तिरसठ","चौंसठ","पैंसठ","छियासठ","सड़सठ","अड़सठ","उनहत्तर","सत्तर",
+  "इकहत्तर","बहत्तर","तिहत्तर","चौहत्तर","पचहत्तर","छिहत्तर","सतहत्तर","अठहत्तर","उनासी","अस्सी",
+  "इक्यासी","बयासी","तिरासी","चौरासी","पचासी","छियासी","सतासी","अट्ठासी","नवासी","नब्बे",
+  "इक्यानवे","बानवे","तिरानवे","चौरानवे","पचानवे","छियानवे","सत्तानवे","अट्ठानवे","निन्यानवे"];
+  var ONES = ["Zero","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  var TENS = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  var EN = [];
+  for (var i = 0; i < 100; i++) EN.push(i < 20 ? ONES[i] : TENS[Math.floor(i / 10)] + (i % 10 ? " " + ONES[i % 10] : ""));
+
+  var DICT = {
+    hi: {nums: HI, units: ["हज़ार","लाख","करोड़","अरब","खरब","नील"], hundred: "सौ", minus: "ऋण", point: "दशमलव"},
+    en: {nums: EN, units: ["Thousand","Lakh","Crore","Arab","Kharab","Neel"], hundred: "Hundred", minus: "Minus", point: "point"}
+  };
+  var MAX_DIGITS = 15, MAX_LEN = 120, MAX_REC = 100;
+
+  // ===== 2. संख्या को शब्द, कॉमा और रूप देना =====
+  function splitParts(whole){
+    var out = [], groups = [], last3 = whole.slice(-3), rest = whole.slice(0, -3);
+    while (rest.length){ groups.unshift(rest.slice(-2)); rest = rest.slice(0, -2); }
+    groups.forEach(function(g, k){ var v = parseInt(g, 10); if (v) out.push({v: v, u: groups.length - 1 - k}); });
+    var t = parseInt(last3, 10), h = Math.floor(t / 100), r = t % 100;
+    if (h) out.push({v: h, u: "h"});
+    if (r) out.push({v: r, u: ""});
+    return out;
+  }
+  // 100 से छोटी संख्या शब्द में, बड़ी अंक + इकाई में ("1 लाख 50 हज़ार")
+  function wordsOf(parts, d){
+    if (!parts.length) return d.nums[0];
+    if (parts.length === 1 && parts[0].u === "") return d.nums[parts[0].v];
+    return parts.map(function(p){
+      var unit = p.u === "h" ? d.hundred : (p.u === "" ? "" : d.units[p.u]);
+      return p.v + (unit ? " " + unit : "");
+    }).join(" ");
+  }
+  function indianComma(whole){
+    if (whole.length <= 3) return whole;
+    return whole.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + whole.slice(-3);
+  }
+  function splitNum(value){
+    var neg = value.charAt(0) === "-", abs = neg ? value.slice(1) : value, dot = abs.indexOf(".");
+    var whole = dot === -1 ? abs : abs.slice(0, dot);
+    return {neg: neg, whole: whole === "" ? "0" : whole.replace(/^0+(?=\d)/, ""), frac: dot === -1 ? "" : abs.slice(dot + 1), dot: dot !== -1};
+  }
+  function formatNum(n){ return (n.neg ? "−" : "") + indianComma(n.whole) + (n.dot ? "." + n.frac : ""); }
+  function prettyExpr(e){
+    return e.replace(/\d+(\.\d*)?/g, function(m){ var p = m.split("."); return indianComma(p[0]) + (p.length > 1 ? "." + p[1] : ""); })
+            .replace(/\*/g, "×").replace(/\//g, "÷").replace(/-/g, "−");
+  }
+  function wordsLine(value, d){
+    var n = splitNum(value), text = wordsOf(splitParts(n.whole), d);
+    if (n.frac) text += " . " + n.frac;
+    return (n.neg ? d.minus + " " : "") + text;
+  }
+
+  // ===== 3. गणना (बिना eval) =====
+  // % : 50% = 0.5 ; 200+10% = 220 ; 200−10% = 180 ; 200×10% = 20
+  function evaluate(str){
+    var tokens = str.match(/\d+\.?\d*|\.\d+|[+\-*\/%]/g) || [], i = 0;
+    function isNum(t){ return t !== undefined && /^[\d.]/.test(t); }
+    function factor(){
+      var t = tokens[i++];
+      if (t === "-") return -factor();
+      if (!isNum(t)) throw new Error("bad");
+      var v = parseFloat(t);
+      while (tokens[i] === "%"){ v /= 100; i++; }
+      return v;
+    }
+    function term(){
+      var v = factor();
+      while (tokens[i] === "*" || tokens[i] === "/"){
+        var op = tokens[i++], r = factor();
+        if (op === "*") v *= r; else { if (r === 0) throw new Error("div0"); v /= r; }
+      }
+      return v;
+    }
+    function sum(){
+      var v = term();
+      while (tokens[i] === "+" || tokens[i] === "-"){
+        var op = tokens[i++], r;
+        if (isNum(tokens[i]) && tokens[i + 1] === "%" && (tokens[i + 2] === undefined || tokens[i + 2] === "+" || tokens[i + 2] === "-")){
+          r = v * parseFloat(tokens[i]) / 100; i += 2;      // जोड़ने/घटाने में % कुल का हिस्सा है
+        } else r = term();
+        v = op === "+" ? v + r : v - r;
+      }
+      return v;
+    }
+    var res = sum();
+    if (i < tokens.length) throw new Error("bad");
+    if (!isFinite(res)) throw new Error("inf");
+    return res;
+  }
+  // जवाब को साफ़ रूप देना: 15 अंक तक गोल (0.30000000000000004 -> 0.3), दशमलव के बाद 10 अंक तक
+  function plainDecimal(s){                              // 1.5e-7 जैसे रूप को साधारण दशमलव में बदलना
+    var m = /^(-?)(\d)(?:\.(\d+))?e([+-]\d+)$/.exec(s);
+    if (!m) return s;
+    var digits = m[2] + (m[3] || ""), exp = parseInt(m[4], 10);
+    return exp < 0 ? m[1] + "0." + new Array(-exp).join("0") + digits
+                   : m[1] + digits + new Array(exp - digits.length + 2).join("0");
+  }
+  function trimZeros(s){ return s.indexOf(".") === -1 ? s : s.replace(/0+$/, "").replace(/\.$/, ""); }
+  function toPlain(n){
+    if (!isFinite(n)) throw new Error("inf");
+    if (Math.abs(n) >= 1e15) throw new Error("big");
+    var s = trimZeros(plainDecimal(n.toPrecision(15))), dot = s.indexOf(".");
+    if (dot !== -1 && s.length - dot - 1 > 10){
+      var short = trimZeros(parseFloat(s).toFixed(10));
+      if (short !== "0" && short !== "-0") s = short;
+    }
+    return s === "-0" ? "0" : s;
+  }
+  function errKey(ex){ return ex && ex.message === "div0" ? "eDiv" : (ex && ex.message === "big" ? "eBig" : "eBad"); }
+  function trimOps(e){ return e.replace(/[+\-*\/]+$/, ""); }
+
+  // हिसाब को जोड़-घटाव की लाइनों में तोड़ना: "32×12+86−5" -> [+32×12, +86, −5]
+  function parseTerms(e){
+    var raw = [], sign = "+", start = 0, c = 0;
+    if (e.charAt(0) === "-"){ sign = "-"; start = 1; }
+    c = start;
+    for (var i = start; i <= e.length; i++){
+      var ch = e.charAt(i);
+      if (i === e.length || ((ch === "+" || ch === "-") && /[0-9%]/.test(e.charAt(i - 1)))){
+        raw.push({s: sign, x: e.slice(c, i)});
+        sign = ch; c = i + 1;
+      }
+    }
+    var running = 0;
+    return raw.map(function(t, k){
+      var pm = /^(\d+\.?\d*|\.\d+)%$/.exec(t.x);
+      var val = (pm && k > 0) ? running * parseFloat(pm[1]) / 100 : evaluate(t.x);
+      running += t.s === "-" ? -val : val;
+      return {s: t.s, x: t.x, v: toPlain(val), n: ""};
+    });
+  }
+  function itemValue(it){ return (it.s === "-" ? -1 : 1) * parseFloat(it.v); }
+  function itemsTotalStrict(items){                      // बहुत बड़ा कुल हो तो गलती फेंकता है
+    var s = 0;
+    items.forEach(function(it){ s += itemValue(it); });
+    return toPlain(s);
+  }
+  function itemsTotal(items){ try { return itemsTotalStrict(items); } catch(e){ return "0"; } }
+
+  // ===== 4. स्टोरेज और सेव की हुई सेटिंग =====
+  var HKEY = "shabd_calc_history_v3", STKEY = "shabd_calc_state", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui",
+      TKEY = "shabd_calc_theme", SKEY = "shabd_calc_sound", SHOPKEY = "shabd_calc_shop", SELLERKEY = "shabd_calc_seller";
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
+
+  function validRecord(h){
+    return h && typeof h.e === "string" && typeof h.r === "string" && (h.k !== "bill" || Array.isArray(h.items));
+  }
+  var records = [];
+  try { records = JSON.parse(lsGet(HKEY) || lsGet("shabd_calc_history_named") || lsGet("shabd_calc_history") || "[]"); } catch(e){}
+  if (!Array.isArray(records)) records = [];
+  records = records.filter(validRecord);
+  function saveRecords(){ lsSet(HKEY, JSON.stringify(records.slice(0, MAX_REC))); }
+
+  var lang = lsGet(LKEY);
+  if (lang !== "hi" && lang !== "en" && lang !== "off") lang = "hi";
+  var uiLang = lsGet(UKEY);
+  if (uiLang !== "hi" && uiLang !== "en") uiLang = lang === "en" ? "en" : "hi";
+  var themeMode = lsGet(TKEY);
+  if (themeMode !== "light" && themeMode !== "dark") themeMode = "auto";
+  var soundOn = lsGet(SKEY) !== "off";
+  var storageOk = lsSet("shabd_calc_test", "1");
+  try { localStorage.removeItem("shabd_calc_test"); } catch(e){}
+
+  // ===== 5. ऐप की भाषा, तारीख़ और छोटा संदेश =====
+  var I18N = {
+    hi: {title:"बिलिंग कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
+         billBtn:"बिल बनाएँ", speakBtn:"बोलकर सुनें", copyBtn:"कॉपी करें", pasteBtn:"पेस्ट करें",
+         langLabel:"भाषा (शब्द कैसे दिखें)", off:"बंद करें", soundLabel:"बटन की आवाज़", soundOn:"चालू", soundOff:"बंद",
+         viewHist:"हिस्ट्री देखें", close:"बंद करें", histTitle:"पिछले हिसाब", clearHist:"हिस्ट्री साफ़ करें",
+         noHist:"अभी कोई हिसाब नहीं है।", noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है, इसलिए बंद होने पर हिस्ट्री मिट सकती है।",
+         err:"त्रुटि", eDiv:"0 से भाग नहीं हो सकता", eBig:"संख्या बहुत बड़ी है", eBad:"हिसाब सही नहीं है",
+         copied:"कॉपी हो गया", copyFail:"कॉपी नहीं हो पाया", pasted:"पेस्ट हो गया", pasteFail:"पेस्ट नहीं हो पाया", notNum:"यह संख्या या हिसाब नहीं लगता",
+         speakNo:"इस फ़ोन में बोलने की सुविधा नहीं है", needExpr:"पहले कोई हिसाब लिखिए",
+         billTitle:"बिल / हिसाब", pdfBtn:"PDF देखें", shopPh:"दुकान का नाम (चाहें तो)", sellerPh:"विक्रेता का नाम", customerPh:"ग्राहक का नाम",
+         itemPh:"सामान का नाम", amtPh:"0", total:"कुल", remove:"यह लाइन हटाएँ", addLine:"नई लाइन जोड़ें", noLines:"कोई लाइन नहीं है।", billTag:"बिल", lines:"लाइन",
+         share:"शेयर", print:"प्रिंट", download:"डाउनलोड", preparing:"PDF बन रही है…", downloaded:"PDF डाउनलोड हो गई", pdfFail:"PDF नहीं बन पाई",
+         textCopied:"बिल का लिखा रूप कॉपी हो गया", designPick:"डिज़ाइन चुनें",
+         pdf:{bill:"बिल", seller:"विक्रेता", customer:"ग्राहक", item:"सामान", amount:"राशि", total:"कुल", inWords:"शब्दों में",
+              itemN:"सामान", lineCount:"कुल लाइनें"}},
+    en: {title:"Billing Calculator", settings:"Settings", theme:"Switch theme", history:"History", erase:"Erase",
+         billBtn:"Make a bill", speakBtn:"Listen", copyBtn:"Copy", pasteBtn:"Paste",
+         langLabel:"Language (how words appear)", off:"Off", soundLabel:"Button sound", soundOn:"On", soundOff:"Off",
+         viewHist:"View history", close:"Close", histTitle:"Past calculations", clearHist:"Clear history",
+         noHist:"No calculations yet.", noStore:"Storage is unavailable in this view, so history may be lost when it closes.",
+         err:"Error", eDiv:"Cannot divide by 0", eBig:"Number is too large", eBad:"Invalid calculation",
+         copied:"Copied", copyFail:"Could not copy", pasted:"Pasted", pasteFail:"Could not paste", notNum:"That does not look like a number or sum",
+         speakNo:"Speech is not available on this phone", needExpr:"Enter a calculation first",
+         billTitle:"Bill / Statement", pdfBtn:"PDF Preview", shopPh:"Shop name (optional)", sellerPh:"Seller name", customerPh:"Customer name",
+         itemPh:"Item name", amtPh:"0", total:"Total", remove:"Remove this line", addLine:"Add a line", noLines:"No lines.", billTag:"Bill", lines:"lines",
+         share:"Share", print:"Print", download:"Download", preparing:"Making the PDF…", downloaded:"PDF downloaded", pdfFail:"Could not make the PDF",
+         textCopied:"Bill text copied", designPick:"Choose design",
+         pdf:{bill:"BILL", seller:"SELLER", customer:"CUSTOMER", item:"ITEM", amount:"AMOUNT", total:"TOTAL", inWords:"In words",
+              itemN:"Item", lineCount:"Lines"}}
+  };
+  function t(k){ return I18N[uiLang][k] || k; }
+  function applyUi(){
+    document.documentElement.lang = uiLang; document.title = t("title");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function(n){ n.textContent = t(n.getAttribute("data-i")); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-ph]"), function(n){ n.placeholder = t(n.getAttribute("data-ph")); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-ia]"), function(n){
+      var s = t(n.getAttribute("data-ia")); n.setAttribute("aria-label", s); n.setAttribute("title", s);
+    });
+  }
+  var DAYS = {
+    hi: ["रविवार","सोमवार","मंगलवार","बुधवार","गुरुवार","शुक्रवार","शनिवार"],
+    en: ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+  };
+  var MONTHS = {
+    hi: ["जनवरी","फ़रवरी","मार्च","अप्रैल","मई","जून","जुलाई","अगस्त","सितंबर","अक्टूबर","नवंबर","दिसंबर"],
+    en: ["January","February","March","April","May","June","July","August","September","October","November","December"]
+  };
+  function whenParts(ts){
+    var d = new Date(ts), h = d.getHours(), m = d.getMinutes();
+    var mm = (m < 10 ? "0" : "") + m, h12 = h % 12 === 0 ? 12 : h % 12;
+    var date = DAYS[uiLang][d.getDay()] + ", " + d.getDate() + " " + MONTHS[uiLang][d.getMonth()] + " " + d.getFullYear();
+    if (uiLang === "en") return {date: date, time: h12 + ":" + mm + " " + (h < 12 ? "AM" : "PM")};
+    var part = h < 4 ? "रात" : h < 12 ? "सुबह" : h < 16 ? "दोपहर" : h < 20 ? "शाम" : "रात";
+    return {date: date, time: part + " " + h12 + ":" + mm + " बजे"};
+  }
+  function fmtWhen(ts){ var w = whenParts(ts); return w.date + ", " + w.time; }
+  var toastTimer = null;
+  function toast(msg){
+    var n = $("toast"); n.textContent = msg; n.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ n.classList.remove("show"); }, 2000);
+  }
+
+  // ===== 6. हिसाब की स्थिति, कर्सर और बटन =====
+  var expr = "", cur = 0, result = null, err = "";
+  var trail = [];
+  var savedBillFor = "";
+
+  function insertAt(s){ expr = expr.slice(0, cur) + s + expr.slice(cur); cur += s.length; }
+  function stripLeadingZeros(){                          // 007 -> 7, 07.5 -> 7.5 (0.5 वैसा ही रहता है); कर्सर भी सँभलता है
+    var re = /(^|[^0-9.])(0+)(?=\d)/g, out = "", last = 0, shift = 0, m;
+    while ((m = re.exec(expr)) !== null){
+      var zs = m.index + m[1].length, ze = zs + m[2].length;
+      out += expr.slice(last, zs); last = ze;
+      if (ze <= cur) shift += ze - zs; else if (zs < cur) shift += cur - zs;
+    }
+    if (last > 0){ expr = out + expr.slice(last); cur = Math.max(0, cur - shift); }
+  }
+  function numAround(p){
+    var s = p, e = p;
+    while (s > 0 && /[0-9.]/.test(expr.charAt(s - 1))) s--;
+    while (e < expr.length && /[0-9.]/.test(expr.charAt(e))) e++;
+    return [s, e];
+  }
+  function continueFromResult(){
+    trail.push({e: expr, r: result});
+    expr = result; cur = expr.length; result = null;
+  }
+
+  function addAuto(e, r){
+    for (var i = 0; i < records.length; i++){
+      if (records[i].e === e && records[i].r === r){
+        if (records[i].k === "bill") return;
+        records.splice(i, 1); break;
+      }
+    }
+    records.unshift({e: e, r: r, t: Date.now()});
+    records = records.slice(0, MAX_REC); saveRecords();
+  }
+  function endSession(){
+    var steps = trail.slice(), seg = null, key = result !== null ? expr : trimOps(expr);
+    if (key && key === savedBillFor){ trail = []; savedBillFor = ""; return; }
+    if (result !== null) seg = {e: expr, r: result};
+    else if (key && key !== "-"){ try { seg = {e: key, r: toPlain(evaluate(key))}; } catch(ex){} }
+    if (seg){
+      var onlyNumber = /^-?\d*\.?\d+$/.test(seg.e);
+      if (!(onlyNumber && (steps.length || parseFloat(seg.e) === 0))) steps.push(seg);
+    }
+    if (steps.length){
+      addAuto(steps.map(function(z, i){ return i < steps.length - 1 ? z.e + " = " + z.r : z.e; }).join(", "), steps[steps.length - 1].r);
+    }
+    trail = []; savedBillFor = "";
+  }
+
+  function toggleSign(){
+    var base = cur;
+    while (base > 0 && expr.charAt(base - 1) === "%") base--;          // % के ठीक बाद हो तो उससे पहले की संख्या
+    var nb = numAround(base), s = nb[0];
+    if (s === nb[1]){ if (expr === ""){ expr = "-"; cur = 1; } return; }
+    var before = expr.slice(0, s), p = before.charAt(before.length - 1), pp = before.charAt(before.length - 2);
+    if (p === "+") expr = before.slice(0, -1) + "-" + expr.slice(s);
+    else if (p === "-"){
+      var binary = /[0-9%]/.test(pp);
+      expr = before.slice(0, -1) + (binary ? "+" : "") + expr.slice(s);
+      if (!binary) cur -= 1;
+    } else { expr = before + "-" + expr.slice(s); cur += 1; }
+  }
+
+  function press(k){
+    err = "";
+    if (/^[0-9.+\-*\/%]$/.test(k) && expr.length >= MAX_LEN) return;
+    if (/^[0-9.]$/.test(k)){
+      if (result !== null){ endSession(); expr = ""; cur = 0; result = null; }
+      if (expr.charAt(cur - 1) === "%") return;
+      var nb = numAround(cur), tok = expr.slice(nb[0], nb[1]);
+      if (k === "."){
+        if (tok.indexOf(".") !== -1) return;
+        insertAt(tok === "" ? "0." : ".");
+      } else {
+        if (tok.replace(".", "").length >= MAX_DIGITS) return;
+        if (tok === "0" && cur === nb[1]){ expr = expr.slice(0, nb[0]) + k + expr.slice(nb[1]); cur = nb[0] + 1; }
+        else { insertAt(k); stripLeadingZeros(); }
+      }
+    } else if ("+-*/".indexOf(k) !== -1){
+      if (result !== null) continueFromResult();
+      var prev = expr.charAt(cur - 1);
+      if (cur === 0){ if (k === "-") insertAt("-"); }
+      else if (/[+\-*\/]/.test(prev)){
+        if (k === "-" && (prev === "*" || prev === "/")) insertAt("-");
+        else {
+          var s = cur;
+          while (s > 0 && /[+\-*\/]/.test(expr.charAt(s - 1))) s--;
+          var rep = (s === 0 && k !== "-") ? "" : k;
+          expr = expr.slice(0, s) + rep + expr.slice(cur); cur = s + rep.length;
+        }
+      } else insertAt(k);
+    } else if (k === "%"){
+      if (result !== null) continueFromResult();
+      if (/[0-9]/.test(expr.charAt(cur - 1))) insertAt("%");
+    } else if (k === "+/-"){
+      if (result !== null) continueFromResult();
+      toggleSign();
+    } else if (k === "B"){
+      if (result !== null){ result = null; cur = expr.length; }
+      if (cur > 0){ expr = expr.slice(0, cur - 1) + expr.slice(cur); cur--; }
+    } else if (k === "C"){
+      endSession(); expr = ""; cur = 0; result = null; savedBillFor = "";
+    } else if (k === "="){
+      if (result !== null) return;
+      var e = trimOps(expr);
+      if (!e || e === "-") return;
+      try { result = toPlain(evaluate(e)); expr = e; cur = e.length; }
+      catch(ex){ err = errKey(ex); }
+    }
+    render(); saveState();
+  }
+
+  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result, tr: trail})); }
+  function loadState(){
+    try {
+      var st = JSON.parse(lsGet(STKEY) || "null");
+      if (st && typeof st.x === "string" && st.x.length <= MAX_LEN && /^[0-9+\-*\/.%]*$/.test(st.x) &&
+          (st.r === null || /^-?[0-9.]+$/.test(st.r)) && Array.isArray(st.tr)){
+        expr = st.x; result = st.r;
+        cur = (typeof st.c === "number" && st.c >= 0 && st.c <= st.x.length) ? st.c : st.x.length;
+        trail = st.tr.filter(function(z){ return z && typeof z.e === "string" && typeof z.r === "string"; });
+      }
+    } catch(e){}
+  }
+  loadState();
+
+  // ===== 7. डिस्प्ले =====
+  function chHtml(i){
+    var ch = expr.charAt(i), pre = (result === null && cur === i) ? '<span class="cur"></span>' : "";
+    var cls = /[0-9.]/.test(ch) ? "ch" : (ch === "%" ? "ch pc" : "ch op");
+    var shown = ch === "*" ? "×" : ch === "/" ? "÷" : ch === "-" ? "−" : ch;
+    return pre + '<span class="' + cls + '" data-i="' + i + '">' + shown + '</span>';
+  }
+  function exprHtml(){
+    if (expr === "" && result === null) return '<span class="cur"></span><span class="ph">0</span>';
+    var out = "", i = 0, n = expr.length;
+    while (i < n){
+      if (/[0-9.]/.test(expr.charAt(i))){
+        var tok = /^[0-9]*\.?[0-9]*/.exec(expr.slice(i))[0], dot = tok.indexOf("."), intLen = dot === -1 ? tok.length : dot;
+        for (var k = 0; k < tok.length; k++){
+          var rem = intLen - k;
+          if (k > 0 && k < intLen && (rem === 3 || (rem > 3 && rem % 2 === 1))) out += '<span class="cm">,</span>';
+          out += chHtml(i + k);
+        }
+        i += tok.length;
+      } else { out += chHtml(i); i++; }
+    }
+    if (result === null && cur === n) out += '<span class="cur"></span>';
+    if (result !== null) out += '<span class="eqs"> =</span>';
+    return out;
+  }
+  // अक्षर तब तक छोटे होते हैं जब तक पढ़ने लायक रहें; उसके बाद खिसकाकर देखें
+  function fit(box, maxRem, minRem){
+    var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    var size = maxRem * rem, min = minRem * rem;
+    box.style.fontSize = size + "px";
+    if (!box.clientWidth) return;
+    var guard = 0;
+    while (box.scrollWidth > box.clientWidth + 1 && size > min && guard++ < 40){ size -= 2; box.style.fontSize = size + "px"; }
+  }
+  function keepCursorVisible(){
+    var box = $("expr"), c = $("exprIn").querySelector(".cur");
+    if (result !== null || !c){ box.scrollLeft = box.scrollWidth; return; }
+    var cr = c.getBoundingClientRect(), br = box.getBoundingClientRect();
+    if (cr.left < br.left + 10) box.scrollLeft -= (br.left + 10 - cr.left);
+    else if (cr.right > br.right - 10) box.scrollLeft += cr.right - (br.right - 10);
+  }
+  function currentView(){
+    var key = trimOps(expr), body = key.replace(/^-/, "");
+    var hasOp = /[+\-*\/%]/.test(body), total = "";
+    if (result !== null){ total = result; hasOp = true; }
+    else if (key && key !== "-"){ try { total = toPlain(evaluate(key)); } catch(ex){ total = ""; } }
+    return {total: total, hasOp: hasOp, value: total !== "" ? total : "0"};
+  }
+  function render(){
+    var mainEl = $("main"), mainIn = $("mainIn"), words = $("words");
+    $("exprIn").innerHTML = exprHtml();
+    fit($("expr"), 3.2, 1.6);
+    keepCursorVisible();
+
+    var v = currentView();
+    if (err){
+      mainIn.textContent = t(err); mainEl.className = "main bad"; mainEl.style.fontSize = "";
+      words.textContent = ""; return;
+    }
+    mainIn.textContent = (v.hasOp && v.total !== "") ? formatNum(splitNum(v.total)) : "";
+    mainEl.className = "main" + (result !== null ? " final" : "");
+    fit(mainEl, 2.2, 1.3);
+    mainEl.scrollLeft = mainEl.scrollWidth;
+    words.textContent = lang === "off" ? "" : wordsLine(v.value, DICT[lang]);
+  }
+  $("expr").addEventListener("click", function(ev){     // हिसाब में कहीं भी छूकर कर्सर वहाँ ले जाना
+    var spans = $("exprIn").querySelectorAll(".ch"), idx = expr.length;
+    for (var i = 0; i < spans.length; i++){
+      var r = spans[i].getBoundingClientRect();
+      if (ev.clientX < r.left + r.width / 2){ idx = parseInt(spans[i].getAttribute("data-i"), 10); break; }
+    }
+    if (result !== null) result = null;
+    cur = idx; err = ""; render(); saveState();
+  });
+
+  // ===== 8. बोलना, कॉपी और पेस्ट =====
+  $("speakBtn").addEventListener("click", function(){
+    if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined"){ toast(t("speakNo")); return; }
+    var btn = $("speakBtn"), l = lang === "off" ? uiLang : lang, text = wordsLine(currentView().value, DICT[l]);
+    text = text.replace(" . ", " " + DICT[l].point + " ");
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = l === "hi" ? "hi-IN" : "en-IN"; u.rate = 0.9;
+    function done(){ btn.classList.remove("speaking"); }
+    u.onend = done; u.onerror = done;
+    btn.classList.add("speaking");
+    window.speechSynthesis.speak(u);
+    setTimeout(done, 15000);                              // किसी वजह से अंत की ख़बर न आए तो भी हिलना रुके
+  });
+
+  function copyText(text){                              // नए तरीके से, न चले तो पुराने तरीके से
+    function legacy(){
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+        var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok;
+      } catch(e){ return false; }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return legacy(); });
+    }
+    return Promise.resolve(legacy());
+  }
+  $("copyBtn").addEventListener("click", function(){
+    var v = currentView().value;                        // सादा संख्या (कॉमा/शब्द के बिना), जो कहीं भी पेस्ट हो सके
+    copyText(v).then(function(ok){ toast(ok ? t("copied") + ": " + formatNum(splitNum(v)) : t("copyFail")); });
+  });
+
+  function cleanPaste(text){                            // कॉपी की हुई चीज़ से सिर्फ़ संख्या/हिसाब निकालना
+    var s = String(text || "").replace(/\([^)]*\)/g, " ").replace(/[₹$€£,\s\u00a0]/g, "")
+      .replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–—]/g, "-")
+      .replace(/[०-९]/g, function(d){ return String(d.charCodeAt(0) - 0x0966); });
+    if (!s || /[^0-9.+\-*\/%]/.test(s) || /\d*\.\d*\./.test(s) || !/\d/.test(s)) return "";
+    return s.slice(0, 60);
+  }
+  function normalizeOps(s){                              // लगातार चिह्नों में आख़िरी रखना (× ÷ के बाद − ऋण संख्या के लिए रहता है)
+    var out = "";
+    for (var i = 0; i < s.length; i++){
+      var ch = s.charAt(i);
+      if (/[+\-*\/]/.test(ch) && /[+\-*\/]$/.test(out)){
+        if (ch === "-" && /[*\/]$/.test(out)) out += ch;
+        else out = out.replace(/[+\-*\/]+$/, "") + ch;
+      } else out += ch;
+    }
+    return out;
+  }
+  function fitPaste(s, ex, cu){                          // पेस्ट को कर्सर की जगह के हिसाब से ढालना
+    s = normalizeOps(s);
+    var before = cu > 0 ? ex.charAt(cu - 1) : "", after = ex.charAt(cu);
+    if (cu === 0 || /[+\-*\/]/.test(before)){
+      var lead = s.match(/^[+\-*\/%]*/)[0], minusOk = (cu === 0 || /[*\/]/.test(before)) && lead.charAt(lead.length - 1) === "-";
+      s = s.slice(lead.length);
+      if (minusOk) s = "-" + s;
+    } else if (!/[0-9]/.test(before)){
+      s = s.replace(/^%+/, "");
+    }
+    if (after && /[+\-*\/%]/.test(after)) s = s.replace(/[+\-*\/]+$/, "");
+    return s;
+  }
+  function validExpr(e){                                 // हर संख्या में एक ही बिंदु, 15 अंक तक, और % के बाद सीधे अंक नहीं
+    var nums = e.match(/[0-9.]+/g) || [];
+    for (var i = 0; i < nums.length; i++){
+      if ((nums[i].match(/\./g) || []).length > 1) return false;
+      if (nums[i].replace(".", "").length > MAX_DIGITS) return false;
+    }
+    return !/%[0-9.]/.test(e) && e.length <= MAX_LEN;
+  }
+  function insertPaste(text){
+    var s = cleanPaste(text);
+    if (!s){ toast(t("notNum")); return; }
+    var ex = result !== null ? "" : expr, cu = result !== null ? 0 : cur;   // = के बाद पेस्ट नया हिसाब शुरू करता है
+    s = fitPaste(s, ex, cu);
+    if (!s || !/[0-9]/.test(s) || !validExpr(ex.slice(0, cu) + s + ex.slice(cu))){ toast(t("notNum")); return; }
+    if (result !== null){ endSession(); expr = ""; cur = 0; result = null; }
+    err = ""; insertAt(s); stripLeadingZeros(); render(); saveState(); toast(t("pasted"));
+  }
+  $("pasteBtn").addEventListener("click", function(){
+    if (!navigator.clipboard || !navigator.clipboard.readText){ toast(t("pasteFail")); return; }
+    navigator.clipboard.readText().then(insertPaste, function(){ toast(t("pasteFail")); });
+  });
+  document.addEventListener("paste", function(ev){      // कीबोर्ड से Ctrl+V
+    if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) return;
+    if (document.querySelector(".overlay.open, .pdf-overlay.open")) return;
+    ev.preventDefault();
+    insertPaste(ev.clipboardData ? ev.clipboardData.getData("text") : "");
+  });
+
+  // ===== 9. बिल वाला पन्ना =====
+  var bill = null, billTimer = null;
+  function nextId(){                                    // हर बिल की अपनी अलग पहचान (समय पर आधारित)
+    var m = Date.now();
+    records.forEach(function(h){ if (typeof h.t === "number" && h.t >= m) m = h.t + 1; });
+    return m;
+  }
+  function openBillFromExpr(){
+    var e = result !== null ? expr : trimOps(expr), items = [];
+    if (e && e !== "-"){
+      try { items = parseTerms(e); } catch(ex){ toast(t(errKey(ex))); return; }
+    }
+    bill = {id: null, openedAt: Date.now(), shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items, key: e, dirty: false};
+    showBill();
+  }
+  function openBillRecord(h){
+    bill = {id: h.t, openedAt: h.t, shop: h.shop || "", seller: h.seller || "", customer: h.customer || "", key: "", dirty: false,
+            items: h.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: it.n || ""}; })};
+    showBill();
+  }
+  function showBill(){
+    $("billShop").value = bill.shop; $("billSeller").value = bill.seller; $("billCustomer").value = bill.customer;
+    $("billDate").textContent = fmtWhen(bill.id || bill.openedAt);
+    renderBill(); sheet("bill", true);
+  }
+  function cleanAmount(s){
+    s = String(s).replace(/[^0-9.]/g, "");
+    var p = s.split(".");
+    if (p.length > 2) s = p[0] + "." + p.slice(1).join("");
+    while (s.replace(".", "").length > MAX_DIGITS) s = s.slice(0, -1);
+    return s;
+  }
+  function updateTotals(){
+    var total = itemsTotal(bill.items);
+    $("billTotal").textContent = formatNum(splitNum(total));
+    $("billWords").textContent = lang === "off" ? "" : wordsLine(total, DICT[lang]);
+  }
+  function addBillLine(at){
+    bill.items.splice(at, 0, {s: "+", x: "0", v: "0", n: ""});
+    touchBill(); renderBill();
+  }
+  function renderBill(){
+    var box = $("billItems"); box.innerHTML = "";
+    if (!bill.items.length){
+      box.appendChild(el("div", "empty", t("noLines")));
+      var first = el("button", "addItemBtn", "+"); first.type = "button"; first.setAttribute("aria-label", t("addLine"));
+      first.style.margin = "0 auto";
+      first.addEventListener("click", function(){ addBillLine(0); });
+      box.appendChild(first);
+    }
+    bill.items.forEach(function(it, i){
+      var row = el("div", "brow"), left = el("div", "bname-wrap");
+
+      var addBtn = el("button", "addItemBtn", "+"); addBtn.type = "button"; addBtn.setAttribute("aria-label", t("addLine"));
+      addBtn.addEventListener("click", function(){ addBillLine(i + 1); });
+
+      var inp = el("input", "fld bname"); inp.type = "text"; inp.maxLength = 40; inp.autocomplete = "off";
+      inp.placeholder = t("itemPh"); inp.value = it.n || "";
+      inp.addEventListener("input", function(){ it.n = inp.value; touchBill(); });
+      left.appendChild(addBtn); left.appendChild(inp);
+
+      var num = el("div", "bnum"), line = el("div", "bline");
+      var sg = el("button", "bsg" + (it.s === "-" ? " neg" : ""), it.s === "-" ? "−" : "+"); sg.type = "button";
+      var amt = el("input", "bamt"); amt.type = "text"; amt.setAttribute("inputmode", "decimal"); amt.autocomplete = "off";
+      amt.placeholder = t("amtPh");
+      function showAmt(){ amt.value = it.v === "0" ? "" : formatNum(splitNum(it.v)); }
+      showAmt();
+      amt.addEventListener("focus", function(){ amt.value = it.v === "0" ? "" : it.v; });
+      amt.addEventListener("input", function(){
+        var s = cleanAmount(amt.value); if (s !== amt.value) amt.value = s;
+        var n = (s === "" || s === ".") ? 0 : parseFloat(s), oldV = it.v, oldX = it.x;
+        try { var v = toPlain(n); it.v = v; it.x = v; itemsTotalStrict(bill.items); }
+        catch(ex){ it.v = oldV; it.x = oldX; amt.value = oldV === "0" ? "" : oldV; toast(t("eBig")); return; }
+        updateTotals(); touchBill();
+        var small = num.querySelector("small"); if (small) small.remove();
+      });
+      amt.addEventListener("blur", showAmt);
+      sg.addEventListener("click", function(){
+        it.s = it.s === "-" ? "+" : "-";
+        try { itemsTotalStrict(bill.items); } catch(ex){ it.s = it.s === "-" ? "+" : "-"; toast(t("eBig")); return; }
+        sg.className = "bsg" + (it.s === "-" ? " neg" : ""); sg.textContent = it.s === "-" ? "−" : "+";
+        updateTotals(); touchBill();
+      });
+      line.appendChild(sg); line.appendChild(amt); num.appendChild(line);
+      if (/[^0-9.]/.test(it.x)) num.appendChild(el("small", "", prettyExpr(it.x)));      // जैसे 32×12
+
+      var del = el("button", "bdel", "×"); del.type = "button"; del.setAttribute("aria-label", t("remove"));
+      del.addEventListener("click", function(){ bill.items.splice(i, 1); touchBill(); renderBill(); });     // लाइन कट गई
+
+      row.appendChild(left); row.appendChild(num); row.appendChild(del);
+      box.appendChild(row);
+    });
+    updateTotals();
+  }
+  // बिल अपने-आप सेव: बदलाव के आधा सेकंड बाद, एक ही बिल = एक ही एंट्री
+  function touchBill(){ bill.dirty = true; clearTimeout(billTimer); billTimer = setTimeout(function(){ saveBillNow(false); }, 500); }
+  function saveBillNow(force){
+    if (!bill || (!bill.dirty && !force)) return;
+    clearTimeout(billTimer);
+    var shop = $("billShop").value.trim(), seller = $("billSeller").value.trim(), customer = $("billCustomer").value.trim();
+    if (!bill.items.length && !shop && !seller && !customer) return;                    // पूरी तरह खाली बिल नहीं सँजोना
+    if (!bill.id) bill.id = nextId();
+    var rec = {
+      k: "bill", shop: shop, seller: seller, customer: customer,
+      items: bill.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: (it.n || "").trim()}; }),
+      e: bill.items.map(function(it, i){ return (i === 0 ? (it.s === "-" ? "-" : "") : it.s) + it.x; }).join(""),
+      r: itemsTotal(bill.items), t: bill.id
+    };
+    records = records.filter(function(h){ return !(h.k === "bill" && h.t === rec.t); });
+    records.unshift(rec); records = records.slice(0, MAX_REC); saveRecords();
+    lsSet(SHOPKEY, shop); lsSet(SELLERKEY, seller);
+    if (bill.key) savedBillFor = bill.key;
+    bill.dirty = false;
+  }
+  function closeBill(){ saveBillNow(false); sheet("bill", false); }
+  ["billShop", "billSeller", "billCustomer"].forEach(function(id){ $(id).addEventListener("input", function(){ if (bill) touchBill(); }); });
+  $("billBtn").addEventListener("click", openBillFromExpr);
+  $("billCloseBtn").addEventListener("click", closeBill);
+
+  // ===== 10. PDF (बिना किसी बाहरी लाइब्रेरी के, इंटरनेट के बिना भी) =====
+  var PW = 1240, PH = 1754;                              // A4 पन्ना (150 dpi)
+  var FONT = '"Noto Sans Devanagari","Mukta","Segoe UI",Roboto,system-ui,sans-serif';
+  var FONT_SERIF = '"Noto Serif Devanagari","Noto Serif",Georgia,"Times New Roman",serif';
+  var RED = "#b3261e", DKEY = "shabd_calc_pdfdesign";
+  // चार अलग-अलग डिज़ाइन: रंग, ऊपर की पट्टी, तालिका, कुल का डिब्बा और सजावट सब अलग
+  var DESIGNS = [
+    {hi: "क्लासिक", en: "Classic", head: "band", thead: "solid", total: "box", frame: false, serif: false, mark: "rgba(29,46,88,0.04)",
+     c: {primary: "#1d2e58", accent: "#f0a82a", on: "#ffffff", ink: "#14213d", muted: "#667089", line: "#dfe5f0", zebra: "#f6f8fc", paper: "#ffffff", soft: "#eef2fa"}},
+    {hi: "रॉयल", en: "Royal", head: "center", thead: "solid", total: "seal", frame: true, serif: true,
+     c: {primary: "#6b1d2a", accent: "#c19a3b", on: "#fff8e7", ink: "#2b1b1e", muted: "#80696c", line: "#e8dbbd", zebra: "#fbf3df", paper: "#fffaf0", soft: "#f7ecd2"}},
+    {hi: "एमरल्ड", en: "Emerald", head: "stripe", thead: "solid", total: "box", frame: false, serif: false, mark: "rgba(14,107,80,0.045)",
+     c: {primary: "#0e6b50", accent: "#f2b632", on: "#ffffff", ink: "#0f2a21", muted: "#5b7a6d", line: "#d3e8de", zebra: "#f0f9f4", paper: "#ffffff", soft: "#e3f4ec"}},
+    {hi: "मिनिमल", en: "Minimal", head: "minimal", thead: "line", total: "plain", frame: false, serif: false,
+     c: {primary: "#111111", accent: "#b08a2e", on: "#ffffff", ink: "#111111", muted: "#6d6d6d", line: "#dcdcdc", zebra: "#fafafa", paper: "#ffffff", soft: "#f1f1f1"}}
+  ];
+  var pdfDesign = parseInt(lsGet(DKEY), 10);
+  if (!(pdfDesign >= 0 && pdfDesign < DESIGNS.length)) pdfDesign = 0;
+  var pdfCanvases = [];
+
+  function rr(g, x, y, w, h, r){                         // गोल कोनों वाला डिब्बा
+    g.beginPath(); g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  function dot(g, x, y, r, color){ g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.closePath(); g.fillStyle = color; g.fill(); }
+  function diamond(g, x, y, r, color){
+    g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r); g.lineTo(x - r, y); g.closePath();
+    g.fillStyle = color; g.fill();
+  }
+  function hline(g, x1, x2, y, color, w){ g.strokeStyle = color; g.lineWidth = w || 2; g.beginPath(); g.moveTo(x1, y); g.lineTo(x2, y); g.stroke(); }
+  function divider(g, cx, y, half, color){               // ——— • ◆ • ———
+    hline(g, cx - half, cx - 30, y, color, 3); hline(g, cx + 30, cx + half, y, color, 3);
+    diamond(g, cx, y, 11, color); dot(g, cx - 48, y, 4, color); dot(g, cx + 48, y, 4, color);
+  }
+  function stripes(g, x0, y0, w, h, gap, color){         // तिरछी रेखाएँ, डिब्बे के भीतर ही
+    g.strokeStyle = color; g.lineWidth = 3;
+    for (var k = -h; k < w; k += gap){
+      var xa = x0 + k, ya = y0 + h, xb = x0 + k + h, yb = y0;
+      if (xa < x0){ ya -= (x0 - xa); xa = x0; }
+      if (xb > x0 + w){ yb += (xb - (x0 + w)); xb = x0 + w; }
+      if (ya <= yb) continue;
+      g.beginPath(); g.moveTo(xa, ya); g.lineTo(xb, yb); g.stroke();
+    }
+  }
+  function frameBox(g, color){                           // दोहरा किनारा और कोनों पर हीरे
+    [[36, 5], [62, 2]].forEach(function(p){
+      var d = p[0], t = p[1];
+      g.fillStyle = color;
+      g.fillRect(d, d, PW - 2 * d, t); g.fillRect(d, PH - d - t, PW - 2 * d, t);
+      g.fillRect(d, d, t, PH - 2 * d); g.fillRect(PW - d - t, d, t, PH - 2 * d);
+    });
+    [[62, 62], [PW - 62, 62], [62, PH - 62], [PW - 62, PH - 62]].forEach(function(p){ diamond(g, p[0], p[1], 16, color); });
+  }
+  function fitFont(g, text, weight, maxPx, minPx, maxW, fam){
+    var f = fam || FONT, px = maxPx; g.font = weight + " " + px + "px " + f;
+    while (g.measureText(text).width > maxW && px > minPx){ px -= 2; g.font = weight + " " + px + "px " + f; }
+    return px;
+  }
+  function clip(g, text, maxW){
+    if (g.measureText(text).width <= maxW) return text;
+    while (text.length > 1 && g.measureText(text + "…").width > maxW) text = text.slice(0, -1);
+    return text + "…";
+  }
+  function wrap(g, text, maxW){
+    var words = text.split(" "), lines = [], line = "";
+    words.forEach(function(w){
+      var tryLine = line ? line + " " + w : w;
+      if (g.measureText(tryLine).width > maxW && line){ lines.push(line); line = w; } else line = tryLine;
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+  // अक्षरों के बीच खाली जगह (सिर्फ़ अंग्रेज़ी में; हिंदी में मात्राएँ टूटतीं, इसलिए वह सामान्य लिखी जाती है)
+  function spaced(g, text, x, y, gap, align){
+    if (/[\u0900-\u097F]/.test(text)){
+      g.textAlign = align || "left"; g.fillText(text, x, y); g.textAlign = "left";
+      return x + g.measureText(text).width;
+    }
+    var w = -gap, i;
+    for (i = 0; i < text.length; i++) w += g.measureText(text.charAt(i)).width + gap;
+    var sx = align === "center" ? x - w / 2 : (align === "right" ? x - w : x);
+    g.textAlign = "left";
+    for (i = 0; i < text.length; i++){ g.fillText(text.charAt(i), sx, y); sx += g.measureText(text.charAt(i)).width + gap; }
+    return sx;
+  }
+  // ऐप का नाम: पन्ने के नीचे सिर्फ़ एक जगह, सजे हुए रूप में
+  function brand(g, x, y, C){
+    rr(g, x, y - 38, 46, 46, 13); g.fillStyle = C.primary; g.fill();
+    g.fillStyle = C.accent; g.font = "800 30px " + FONT; g.textAlign = "center"; g.fillText("B", x + 23, y - 6); g.textAlign = "left";
+    g.fillStyle = C.primary; g.font = "800 26px " + FONT;
+    var ex = spaced(g, "BILLING", x + 64, y - 14, 5, "left");
+    g.fillStyle = C.accent; g.fillRect(x + 64, y - 2, Math.max(20, ex - (x + 64) - 5), 4);
+    g.fillStyle = C.muted; g.font = "600 26px " + FONT;
+    spaced(g, "CALCULATOR", ex + 10, y - 14, 5, "left");
+  }
+  function billInfo(){
+    var items = bill.items, total = itemsTotal(items);
+    return {
+      shop: $("billShop").value.trim(), seller: $("billSeller").value.trim(), customer: $("billCustomer").value.trim(),
+      items: items, total: total, ts: bill.id || bill.openedAt || Date.now(),
+      words: lang === "off" ? "" : wordsLine(total, DICT[lang])
+    };
+  }
+
+  function renderBillPages(){
+    var D = DESIGNS[pdfDesign], C = D.c, HF = D.serif ? FONT_SERIF : FONT;
+    var L = I18N[uiLang].pdf, info = billInfo(), wp = whenParts(info.ts);
+    var M = D.frame ? 112 : 80, W = PW - 2 * M, ROWH = 84, TOTALS_H = 190, wordLines = [];
+    var FL = D.frame ? PH - 172 : PH - 112, LIMIT = FL - 34;
+    var COL = {n: M + 26, item: M + 104, amt: PW - M - 30};
+    var title = info.shop || L.bill, pages = [], cur, y;
+
+    function newPage(){
+      var cv = document.createElement("canvas"); cv.width = PW; cv.height = PH;
+      var g = cv.getContext("2d"); g.fillStyle = C.paper; g.fillRect(0, 0, PW, PH);
+      g.textBaseline = "alphabetic"; g.textAlign = "left";
+      if (D.mark){ dot(g, PW + 30, PH - 30, 430, D.mark); dot(g, PW + 30, PH - 30, 320, D.mark); dot(g, PW + 30, PH - 30, 210, D.mark); }
+      if (D.frame) frameBox(g, C.accent);
+      var p = {cv: cv, g: g}; pages.push(p); return p;
+    }
+    function dateRight(g, x, y1, y2, c1, c2){
+      g.textAlign = "right"; g.fillStyle = c1; g.font = "700 30px " + FONT; g.fillText(clip(g, wp.date, 440), x, y1);
+      g.fillStyle = c2; g.font = "600 28px " + FONT; g.fillText(wp.time, x, y2); g.textAlign = "left";
+    }
+    function pill(g, x, y, fill, color){
+      g.font = "700 24px " + FONT; var w = g.measureText(L.bill).width + 44;
+      rr(g, x, y - 34, w, 46, 23); g.fillStyle = fill; g.fill();
+      g.fillStyle = color; g.fillText(L.bill, x + 22, y - 2);
+    }
+    // --- पहले पन्ने का ऊपरी हिस्सा (चार तरह का) ---
+    function headBand(g){
+      g.fillStyle = C.primary; g.fillRect(0, 0, PW, 252);
+      dot(g, PW - 70, -20, 250, "rgba(255,255,255,0.05)"); dot(g, PW - 70, -20, 190, "rgba(255,255,255,0.05)"); dot(g, PW - 70, -20, 130, "rgba(255,255,255,0.06)");
+      g.fillStyle = C.accent; g.fillRect(0, 252, PW, 8);
+      g.fillStyle = C.on; fitFont(g, title, 800, 60, 32, W - 430, HF); g.fillText(clip(g, title, W - 430), M, 124);
+      if (info.shop) pill(g, M, 190, C.accent, C.primary);
+      dateRight(g, PW - M, 108, 154, C.on, "rgba(255,255,255,0.85)");
+      return 252 + 8 + 44;
+    }
+    function headStripe(g){
+      rr(g, M, 64, W, 224, 30); g.fillStyle = C.primary; g.fill();
+      stripes(g, M + 16, 80, W - 32, 192, 36, "rgba(255,255,255,0.08)");
+      g.fillStyle = C.on; fitFont(g, title, 800, 58, 32, W - 480, HF); g.fillText(clip(g, title, W - 480), M + 48, 160);
+      if (info.shop) pill(g, M + 48, 236, C.accent, C.ink);
+      dateRight(g, PW - M - 48, 142, 188, C.on, "rgba(255,255,255,0.85)");
+      return 64 + 224 + 48;
+    }
+    function headCenter(g){
+      var cx = PW / 2;
+      divider(g, cx, 150, 300, C.accent);
+      g.textAlign = "center"; g.fillStyle = C.primary; fitFont(g, title, 800, 66, 34, W - 40, HF);
+      g.fillText(clip(g, title, W - 40), cx, 240);
+      g.fillStyle = C.accent; g.font = "700 24px " + FONT; spaced(g, L.bill, cx, 288, 10, "center");
+      divider(g, cx, 322, 300, C.accent);
+      g.textAlign = "center"; g.fillStyle = C.muted; g.font = "600 27px " + FONT;
+      g.fillText(wp.date + "   •   " + wp.time, cx, 384); g.textAlign = "left";
+      return 432;
+    }
+    function headMinimal(g){
+      g.fillStyle = C.accent; g.fillRect(M, 92, 96, 8);
+      g.fillStyle = C.muted; g.font = "700 24px " + FONT; spaced(g, L.bill, M, 150, 8, "left");
+      g.fillStyle = C.ink; fitFont(g, title, 700, 74, 36, W - 440, HF); g.fillText(clip(g, title, W - 440), M, 252);
+      dateRight(g, PW - M, 142, 186, C.ink, C.muted);
+      hline(g, M, PW - M, 296, C.ink, 4);
+      return 296 + 44;
+    }
+    function headFirst(g){
+      return D.head === "band" ? headBand(g) : D.head === "stripe" ? headStripe(g) : D.head === "center" ? headCenter(g) : headMinimal(g);
+    }
+    // --- आगे के पन्नों का छोटा ऊपरी हिस्सा ---
+    function headMore(g){
+      var cx = PW / 2;
+      if (D.head === "center"){
+        g.textAlign = "center"; g.fillStyle = C.primary; g.font = "800 40px " + HF;
+        g.fillText(clip(g, title, W - 40), cx, 176); g.textAlign = "left";
+        divider(g, cx, 214, 260, C.accent); return 262;
+      }
+      if (D.head === "minimal"){
+        g.fillStyle = C.ink; g.font = "700 38px " + FONT; g.fillText(clip(g, title, W - 380), M, 130);
+        g.textAlign = "right"; g.fillStyle = C.muted; g.font = "600 24px " + FONT; g.fillText(wp.date, PW - M, 130); g.textAlign = "left";
+        hline(g, M, PW - M, 160, C.ink, 4); return 200;
+      }
+      g.fillStyle = C.primary; g.fillRect(0, 0, PW, 112);
+      if (D.head === "band"){ g.fillStyle = C.accent; g.fillRect(0, 112, PW, 6); }
+      g.fillStyle = C.on; g.font = "800 38px " + HF; g.fillText(clip(g, title, W - 380), M, 72);
+      g.textAlign = "right"; g.font = "600 24px " + FONT; g.fillText(wp.date, PW - M, 72); g.textAlign = "left";
+      return 118 + 40;
+    }
+    // --- विक्रेता और ग्राहक के नाम के डिब्बे ---
+    function cards(g, y0){
+      var list = [];
+      if (info.seller) list.push([L.seller, info.seller]);
+      if (info.customer) list.push([L.customer, info.customer]);
+      if (!list.length) return y0;
+      var gap = 26, cw = (W - gap * (list.length - 1)) / list.length, h = D.head === "minimal" ? 112 : 128;
+      list.forEach(function(cd, i){
+        var x = M + i * (cw + gap), pad = D.head === "minimal" ? 0 : 30;
+        if (D.head === "band"){
+          rr(g, x, y0, cw, h, 18); g.fillStyle = C.zebra; g.fill(); g.strokeStyle = C.line; g.lineWidth = 2; g.stroke();
+          g.fillStyle = C.accent; g.fillRect(x, y0 + 26, 6, 76);
+        } else if (D.head === "center"){
+          rr(g, x, y0, cw, h, 14); g.strokeStyle = C.accent; g.lineWidth = 3; g.stroke();
+        } else if (D.head === "stripe"){
+          rr(g, x, y0, cw, h, 22); g.fillStyle = C.soft; g.fill();
+          g.fillStyle = C.primary; g.fillRect(x + 16, y0 + 28, 6, 72); pad = 42;
+        } else {
+          hline(g, x, x + cw, y0 + h - 4, C.line, 3);
+        }
+        g.fillStyle = D.head === "center" ? C.accent : C.muted; g.font = "700 22px " + FONT;
+        spaced(g, cd[0], x + pad, y0 + 44, D.head === "minimal" ? 4 : 2, "left");
+        g.fillStyle = C.ink; fitFont(g, cd[1], 700, 38, 24, cw - pad - 30, HF);
+        g.fillText(clip(g, cd[1], cw - pad - 30), x + pad, y0 + 94);
+      });
+      return y0 + h + 36;
+    }
+    function tHead(g, y0){
+      if (D.thead === "solid"){ rr(g, M, y0, W, 66, 14); g.fillStyle = C.primary; g.fill(); }
+      else hline(g, M, M + W, y0 + 66, C.ink, 3);
+      g.fillStyle = D.thead === "solid" ? C.on : C.muted; g.font = "700 24px " + FONT; g.textAlign = "left";
+      g.fillText("#", COL.n, y0 + 43); g.fillText(L.item, COL.item, y0 + 43);
+      g.textAlign = "right"; g.fillText(L.amount, COL.amt, y0 + 43); g.textAlign = "left";
+      return y0 + 66 + 4;
+    }
+    function drawRow(g, y0, it, idx){
+      if (idx % 2 === 0){ g.fillStyle = C.zebra; g.fillRect(M, y0, W, ROWH); }
+      hline(g, M, M + W, y0 + ROWH, C.line, 1.5);
+      var name = (it.n || "").trim(), formula = /[^0-9.]/.test(it.x) ? prettyExpr(it.x) : "", maxW = COL.amt - COL.item - 400;
+      g.fillStyle = C.muted; g.font = "600 26px " + FONT; g.fillText(String(idx + 1), COL.n, y0 + 52);
+      g.fillStyle = name ? C.ink : C.muted; g.font = "600 30px " + FONT;
+      g.fillText(clip(g, name || (L.itemN + " " + (idx + 1)), maxW), COL.item, formula ? y0 + 40 : y0 + 52);
+      if (formula){ g.fillStyle = C.muted; g.font = "500 22px " + FONT; g.fillText(clip(g, formula, maxW), COL.item, y0 + 70); }
+      var eff = itemValue(it), neg = eff < 0, shown = "0";
+      try { shown = formatNum(splitNum(toPlain(Math.abs(eff)))); } catch(ex){}
+      g.textAlign = "right"; g.fillStyle = neg ? RED : C.ink; g.font = "700 32px " + FONT;
+      g.fillText((neg ? "− " : "") + shown, COL.amt, y0 + 52); g.textAlign = "left";
+    }
+    function totals(g, y0){
+      var bw = 700, bh = 170, x = PW - M - bw, totalText = formatNum(splitNum(info.total));
+      g.fillStyle = C.muted; g.font = "600 26px " + FONT; g.fillText(L.lineCount + ": " + info.items.length, M, y0 + 62);
+      if (D.total === "box"){
+        rr(g, x, y0, bw, bh, 24); g.fillStyle = C.primary; g.fill();
+        g.fillStyle = C.accent; g.font = "700 24px " + FONT; spaced(g, L.total, x + 36, y0 + 54, 3, "left");
+        g.fillStyle = C.on; g.textAlign = "right"; fitFont(g, totalText, 800, 78, 40, bw - 72, HF); g.fillText(totalText, x + bw - 36, y0 + 132);
+      } else if (D.total === "seal"){
+        rr(g, x, y0, bw, bh, 24); g.fillStyle = C.soft; g.fill(); g.strokeStyle = C.accent; g.lineWidth = 4; g.stroke();
+        rr(g, x + 12, y0 + 12, bw - 24, bh - 24, 16); g.strokeStyle = C.accent; g.lineWidth = 1.5; g.stroke();
+        g.fillStyle = C.primary; g.font = "700 24px " + FONT; spaced(g, L.total, x + 40, y0 + 62, 3, "left");
+        g.fillStyle = C.primary; g.textAlign = "right"; fitFont(g, totalText, 800, 78, 40, bw - 80, HF); g.fillText(totalText, x + bw - 40, y0 + 136);
+      } else {
+        hline(g, x, PW - M, y0, C.ink, 4);
+        g.fillStyle = C.muted; g.font = "700 24px " + FONT; spaced(g, L.total, x, y0 + 56, 3, "left");
+        g.fillStyle = C.ink; g.textAlign = "right"; fitFont(g, totalText, 800, 84, 40, bw, HF); g.fillText(totalText, PW - M, y0 + 140);
+        hline(g, x, PW - M, y0 + bh, C.line, 3);
+      }
+      g.textAlign = "left";
+      if (info.words){
+        var yy = y0 + bh + 52;
+        g.textAlign = "right"; g.fillStyle = C.muted; g.font = "700 22px " + FONT; g.fillText(L.inWords, PW - M, yy);
+        g.fillStyle = C.ink; g.font = "600 30px " + FONT;
+        wordLines.forEach(function(ln, i){ g.fillText(ln, PW - M, yy + 46 + i * 42); });
+        g.textAlign = "left";
+      }
+    }
+    function footer(p, n, all){
+      var g = p.g;
+      hline(g, M, PW - M, FL, C.line, 2);
+      brand(g, M, FL + 62, C);
+      g.fillStyle = C.muted; g.font = "600 24px " + FONT; g.textAlign = "right"; g.fillText(n + " / " + all, PW - M, FL + 54); g.textAlign = "left";
+    }
+
+    cur = newPage();
+    if (info.words){                                     // शब्दों की लाइनें पहले गिनना, ताकि कुल के लिए सही जगह छोड़ी जाए
+      cur.g.font = "600 30px " + FONT; wordLines = wrap(cur.g, info.words, W * 0.72).slice(0, 3);
+      TOTALS_H = 282 + 42 * (wordLines.length - 1);
+    }
+    y = headFirst(cur.g); y = cards(cur.g, y); y = tHead(cur.g, y);
+    info.items.forEach(function(it, i){
+      if (y + ROWH > LIMIT){ cur = newPage(); y = headMore(cur.g); y = tHead(cur.g, y); }
+      drawRow(cur.g, y, it, i); y += ROWH;
+    });
+    y += 38;
+    if (y + TOTALS_H > FL - 8){ cur = newPage(); y = headMore(cur.g); }
+    totals(cur.g, y);
+    pages.forEach(function(p, i){ footer(p, i + 1, pages.length); });
+    return pages.map(function(p){ return p.cv; });
+  }
+
+  // PDF फ़ाइल हाथ से बनाना: हर पन्ना एक JPEG तस्वीर है (हिंदी अक्षर जैसे दिखते हैं वैसे ही रहते हैं)
+  function strBytes(s){ var u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; }
+  function buildPdf(jpegs){
+    var chunks = [], offs = [], pos = 0;
+    function put(x){ var b = typeof x === "string" ? strBytes(x) : x; chunks.push(b); pos += b.length; }
+    function obj(n, body){ offs[n] = pos; put(n + " 0 obj\n" + body + "\nendobj\n"); }
+    put("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    var n = jpegs.length, kids = [];
+    for (var i = 0; i < n; i++) kids.push((3 + i * 3) + " 0 R");
+    obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+    obj(2, "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + n + " >>");
+    jpegs.forEach(function(j, i){
+      var p = 3 + i * 3, c = p + 1, im = p + 2, content = "q 595.28 0 0 841.89 0 0 cm /Im0 Do Q";
+      obj(p, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 " + im + " 0 R >> >> /Contents " + c + " 0 R >>");
+      obj(c, "<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream");
+      offs[im] = pos;
+      put(im + " 0 obj\n<< /Type /XObject /Subtype /Image /Width " + j.w + " /Height " + j.h +
+          " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + j.bytes.length + " >>\nstream\n");
+      put(j.bytes); put("\nendstream\nendobj\n");
+    });
+    var count = 3 + n * 3, xref = pos, x = "xref\n0 " + count + "\n0000000000 65535 f \n";
+    for (var k = 1; k < count; k++) x += String(offs[k]).padStart(10, "0") + " 00000 n \n";
+    put(x + "trailer\n<< /Size " + count + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
+    return new Blob(chunks, {type: "application/pdf"});
+  }
+  function canvasJpeg(cv){
+    return new Promise(function(res, rej){
+      cv.toBlob(function(b){
+        if (!b){ rej(new Error("blob")); return; }
+        var fr = new FileReader();
+        fr.onload = function(){ res({bytes: new Uint8Array(fr.result), w: cv.width, h: cv.height}); };
+        fr.onerror = function(){ rej(new Error("read")); };
+        fr.readAsArrayBuffer(b);
+      }, "image/jpeg", 0.92);
+    });
+  }
+  function makePdfBlob(){ return Promise.all(pdfCanvases.map(canvasJpeg)).then(buildPdf); }
+
+  function pdfFileName(){
+    var d = new Date(bill.id || bill.openedAt || Date.now()), p2 = function(n){ return (n < 10 ? "0" : "") + n; };
+    var who = ($("billCustomer").value || $("billShop").value || "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24);
+    return "Bill_" + (who ? who + "_" : "") + d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "_" + p2(d.getHours()) + p2(d.getMinutes()) + ".pdf";
+  }
+  function billText(){                                  // शेयर के लिए सादा लिखा रूप (WhatsApp आदि में)
+    var info = billInfo(), L = I18N[uiLang].pdf, lines = [];
+    lines.push("*" + (info.shop || L.bill) + "*");
+    if (info.seller) lines.push(L.seller + ": " + info.seller);
+    if (info.customer) lines.push(L.customer + ": " + info.customer);
+    var w = whenParts(info.ts); lines.push(w.date + ", " + w.time, "");
+    info.items.forEach(function(it, i){
+      var eff = itemValue(it), amt = "0";
+      try { amt = formatNum(splitNum(toPlain(Math.abs(eff)))); } catch(ex){}
+      lines.push((i + 1) + ". " + ((it.n || "").trim() || (L.itemN + " " + (i + 1))) + " — " + (eff < 0 ? "−" : "") + amt);
+    });
+    lines.push("", L.total + ": " + formatNum(splitNum(info.total)));
+    if (info.words) lines.push(info.words);
+    return lines.join("\n");
+  }
+
+  function showPages(){
+    pdfCanvases.forEach(function(cv){ cv.width = 0; cv.height = 0; });    // पुराने पन्नों की मेमोरी तुरंत मुक्त
+    pdfCanvases = renderBillPages();
+    var box = $("pdfPages"); box.innerHTML = "";
+    pdfCanvases.forEach(function(cv){ box.appendChild(cv); });
+  }
+  function buildDesignChips(){
+    var box = $("pdfDesigns"); box.innerHTML = "";
+    DESIGNS.forEach(function(d, i){
+      var b = el("button", "dchip"); b.type = "button"; b.setAttribute("aria-pressed", i === pdfDesign ? "true" : "false");
+      var sw = el("span", "sw"), a = el("i"), c = el("i"); a.style.background = d.c.primary; c.style.background = d.c.accent;
+      sw.appendChild(a); sw.appendChild(c); b.appendChild(sw); b.appendChild(el("span", "", d[uiLang]));
+      b.addEventListener("click", function(){ selectDesign(i); });
+      box.appendChild(b);
+    });
+  }
+  function selectDesign(i){
+    pdfDesign = i; lsSet(DKEY, String(i)); showPages(); buildDesignChips();
+    var pb = $("pdfOverlay").querySelector(".pdf-body"); if (pb) pb.scrollTop = 0;
+  }
+  function openPdfPreview(){
+    if (!bill.items.length){ toast(t("noLines")); return; }
+    saveBillNow(true);
+    showPages(); buildDesignChips();
+    $("pdfTitle").textContent = $("billShop").value.trim() || (I18N[uiLang].pdf.bill + " • " + formatNum(splitNum(itemsTotal(bill.items))));
+    sheet("pdfOverlay", true);
+    var body = $("pdfOverlay").querySelector(".pdf-body"); if (body) body.scrollTop = 0;
+  }
+  function closePdfPreview(){ sheet("pdfOverlay", false); }
+
+  function downloadBill(){
+    toast(t("preparing"));
+    makePdfBlob().then(function(blob){
+      var url = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = url; a.download = pdfFileName(); a.style.display = "none";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+      toast(t("downloaded"));
+    }).catch(function(){ toast(t("pdfFail")); });
+  }
+  function shareBill(){
+    var title = $("billShop").value.trim() || I18N[uiLang].pdf.bill;
+    function textShare(){
+      var text = billText();
+      if (navigator.share){ return navigator.share({title: title, text: text}).catch(function(e){ if (!e || e.name !== "AbortError") return copyText(text).then(function(ok){ toast(ok ? t("textCopied") : t("copyFail")); }); }); }
+      return copyText(text).then(function(ok){ toast(ok ? t("textCopied") : t("copyFail")); });
+    }
+    makePdfBlob().then(function(blob){
+      var file = null;
+      try { file = new File([blob], pdfFileName(), {type: "application/pdf"}); } catch(e){}
+      if (file && navigator.canShare && navigator.canShare({files: [file]})){
+        return navigator.share({files: [file], title: title}).catch(function(e){ if (!e || e.name !== "AbortError") return textShare(); });
+      }
+      return textShare();
+    }).catch(function(){ return textShare(); });
+  }
+  function printBill(){                                 // पूरा पन्ना बदले बिना: सिर्फ़ प्रिंट के समय बाकी सब छिपता है
+    var done = function(){ document.body.classList.remove("printing"); window.removeEventListener("afterprint", done); };
+    document.body.classList.add("printing");
+    window.addEventListener("afterprint", done);
+    setTimeout(done, 120000);
+    setTimeout(function(){ window.print(); }, 250);              // "printing" वाली दिखावट लगने का समय, ताकि खाली पन्ना न छपे
+  }
+
+  $("billPdfBtn").addEventListener("click", openPdfPreview);
+  $("pdfCloseAction").addEventListener("click", closePdfPreview);
+  $("pdfDownloadAction").addEventListener("click", function(){ saveBillNow(true); downloadBill(); });
+  $("pdfShareAction").addEventListener("click", function(){ saveBillNow(true); shareBill(); });
+  $("pdfPrintAction").addEventListener("click", function(){ saveBillNow(true); printBill(); });
+
+  // ===== 11. हिस्ट्री =====
+  function renderHistory(){
+    var list = $("list"); list.innerHTML = "";
+    if (!storageOk) list.appendChild(el("div", "empty", t("noStore")));
+    if (!records.length){ list.appendChild(el("div", "empty", t("noHist"))); return; }
+    records.forEach(function(h){
+      var b = el("button", "item"); b.type = "button";
+      if (h.k === "bill"){
+        var head = el("div", "ttl"), who = h.customer || h.shop || h.seller || t("billTag");
+        head.appendChild(el("span", "", who)); head.appendChild(el("span", "tag", t("billTag")));
+        b.appendChild(head);
+        var sub = [h.shop, h.seller].filter(function(x){ return x && x !== who; }).join(" · ");
+        if (sub) b.appendChild(el("small", "", sub));
+        b.appendChild(el("small", "", h.items.length + " " + t("lines")));
+        b.appendChild(el("b", "", formatNum(splitNum(h.r))));
+        b.addEventListener("click", function(){ sheet("hist", false); openBillRecord(h); });
+      } else {
+        if (h.name) b.appendChild(el("div", "ttl", h.name));
+        b.appendChild(el("small", "", prettyExpr(h.e) + " ="));
+        b.appendChild(el("b", "", formatNum(splitNum(h.r))));
+        b.addEventListener("click", function(){
+          endSession(); trail = []; expr = h.r; cur = expr.length; result = null; err = "";
+          sheet("hist", false); render(); saveState();
+        });
+      }
+      if (h.t) b.appendChild(el("small", "", fmtWhen(h.t)));
+      list.appendChild(b);
+    });
+  }
+
+  // ===== 12. थीम, आवाज़ और सेटिंग्स =====
+  function svg(inner){
+    return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+  }
+  var MOON = svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>');
+  var SUN = svg('<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>');
+  function isDark(){ return themeMode === "dark" || (themeMode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches); }
+  function applyTheme(){
+    var d = isDark();
+    document.documentElement.setAttribute("data-theme", d ? "dark" : "light");
+    $("themeBtn").innerHTML = d ? SUN : MOON;
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", d ? "#1d2e58" : "#e8ecf4");
+  }
+  function setTheme(m){ themeMode = m; lsSet(TKEY, m); applyTheme(); }
+  try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){ if (themeMode === "auto") applyTheme(); }); } catch(e){}
+
+  var audioCtx = null;
+  function beep(k){
+    if (!soundOn) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var now = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(k === "=" ? 880 : "+-*/".indexOf(k) !== -1 ? 660 : (k === "C" || k === "B") ? 440 : 760, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.18, now + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(now); o.stop(now + 0.07);
+    } catch(e){}
+  }
+  function feedback(k){                                 // आवाज़ और हल्का कंपन, दोनों एक ही स्विच से
+    if (!soundOn) return;
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch(e){}
+    beep(k);
+  }
+
+  // पन्ने (सेटिंग्स, हिस्ट्री, बिल, PDF) खुलने पर history में एक प्रविष्टि जुड़ती है, ताकि फ़ोन का बैक बटन
+  // ऐप बंद करने के बजाय सबसे ऊपर का पन्ना बंद करे। सेटिंग्स/हिस्ट्री/बिल एक-दूसरे की जगह लेते हैं।
+  var ovStack = [], ignorePops = 0, pendingPop = false;      // ovStack: खुले पन्ने [{id, own}]; own = इसकी अपनी history प्रविष्टि है
+  function ovIndex(id){ for (var i = 0; i < ovStack.length; i++) if (ovStack[i].id === id) return i; return -1; }
+  function navPush(){
+    if (pendingPop){ pendingPop = false; return true; }        // अभी एक पन्ना बंद हुआ था: उसकी प्रविष्टि नए के काम आ गई
+    try { history.pushState({ov: 1}, ""); return true; } catch(e){ return false; }
+  }
+  function navPop(){
+    pendingPop = true;
+    setTimeout(function(){
+      if (!pendingPop) return;
+      pendingPop = false; ignorePops++;
+      try { history.back(); } catch(e){ ignorePops--; }
+    }, 0);
+  }
+  function sheet(id, open){
+    var node = $(id), i = ovIndex(id);
+    if (open){
+      if (i !== -1) return;
+      var own = false;
+      if (id !== "pdfOverlay"){
+        for (var j = ovStack.length - 1; j >= 0; j--){
+          if (ovStack[j].id !== "pdfOverlay"){ own = ovStack[j].own; $(ovStack[j].id).classList.remove("open"); ovStack.splice(j, 1); break; }
+        }
+      }
+      if (!own) own = navPush();
+      ovStack.push({id: id, own: own});
+      node.classList.add("open");
+    } else {
+      node.classList.remove("open");
+      if (i === -1) return;
+      var item = ovStack.splice(i, 1)[0];
+      if (item.own) navPop();
+    }
+  }
+  function closeTop(){
+    if (!ovStack.length) return false;
+    var id = ovStack[ovStack.length - 1].id;
+    if (id === "pdfOverlay") closePdfPreview(); else if (id === "bill") closeBill(); else sheet(id, false);
+    return true;
+  }
+  window.addEventListener("popstate", function(){
+    if (ignorePops > 0){ ignorePops--; return; }
+    if (!ovStack.length) return;                               // कोई पन्ना खुला नहीं: बैक का सामान्य काम
+    ovStack[ovStack.length - 1].own = false;                   // इसकी प्रविष्टि बैक से हट चुकी है
+    closeTop();
+  });
+  try { if (history.state && history.state.ov) history.replaceState(null, ""); } catch(e){}
+  function mark(id, attr, isOn){
+    Array.prototype.forEach.call($(id).children, function(b){ b.classList.toggle("on", isOn(b.getAttribute(attr))); });
+  }
+  function syncOpts(){
+    mark("optLang", "data-l", function(v){ return v === lang; });
+    mark("optSound", "data-s", function(v){ return (v === "on") === soundOn; });
+  }
+  function setLang(l){
+    lang = l;
+    if (l === "hi" || l === "en") uiLang = l;
+    lsSet(LKEY, lang); lsSet(UKEY, uiLang);
+    syncOpts(); applyUi(); render();
+  }
+  function setSound(on){ soundOn = on; lsSet(SKEY, on ? "on" : "off"); syncOpts(); beep("5"); }
+
+  function on(id, fn){ $(id).addEventListener("click", fn); }
+  function onPick(id, attr, fn){
+    on(id, function(ev){ var b = ev.target.closest("button[" + attr + "]"); if (b) fn(b.getAttribute(attr)); });
+  }
+  onPick("pad", "data-k", function(k){ feedback(k); press(k); });
+  onPick("optLang", "data-l", setLang);
+  onPick("optSound", "data-s", function(v){ setSound(v === "on"); });
+  on("themeBtn", function(){ setTheme(isDark() ? "light" : "dark"); });
+  on("gearBtn", function(){ syncOpts(); sheet("settings", true); });
+  on("openHist", function(){ sheet("settings", false); renderHistory(); sheet("hist", true); });
+  on("setClose", function(){ sheet("settings", false); });
+  on("histClose", function(){ sheet("hist", false); });
+  on("histClear", function(){ records = []; saveRecords(); renderHistory(); });
+  on("settings", function(ev){ if (ev.target === $("settings")) sheet("settings", false); });
+  on("hist", function(ev){ if (ev.target === $("hist")) sheet("hist", false); });
+  on("bill", function(ev){ if (ev.target === $("bill")) closeBill(); });
+
+  // कीबोर्ड (नाम लिखने वाले डिब्बों में नहीं चलता)
+  document.addEventListener("keydown", function(ev){
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.defaultPrevented) return;
+    var pdfOpen = $("pdfOverlay").classList.contains("open"), open = document.querySelector(".overlay.open");
+    if (ev.key === "Escape"){ closeTop(); ev.preventDefault(); return; }
+    if (pdfOpen || open || (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName))) return;
+    if (ev.target && ev.target.tagName === "BUTTON" && (ev.key === "Enter" || ev.key === " ")) return;
+    var map = {"0":"0","1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9", ".":".", ",":".",
+               "+":"+","-":"-","*":"*","/":"/","%":"%","Enter":"=","=":"=","Backspace":"B","Delete":"C","c":"C","C":"C"};
+    if (map[ev.key]){ ev.preventDefault(); feedback(map[ev.key]); press(map[ev.key]); return; }
+    if (ev.key === "ArrowLeft" && cur > 0){ cur--; render(); saveState(); ev.preventDefault(); }
+    if (ev.key === "ArrowRight" && cur < expr.length){ cur++; render(); saveState(); ev.preventDefault(); }
+  });
+  window.addEventListener("resize", render);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+
+  function flushAll(){
+    try { if (bill && $("bill").classList.contains("open")) saveBillNow(false); } catch(e){}
+    saveState();
+  }
+  document.addEventListener("visibilitychange", function(){ if (document.hidden) flushAll(); });
+  window.addEventListener("pagehide", flushAll);
+  $("bill").addEventListener("focusin", function(ev){        // लिखने का डिब्बा कीबोर्ड के ऊपर दिखता रहे
+    var node = ev.target;
+    if (node && node.scrollIntoView) setTimeout(function(){ try { node.scrollIntoView({block: "center", behavior: "smooth"}); } catch(e){} }, 320);
+  });
+
+  // ===== 13. शुरुआत =====
+  Array.prototype.forEach.call(document.querySelectorAll(".key"), function(k, i){ k.style.setProperty("--i", i); });
+  applyTheme();
+  applyUi();
+  render();
+})();
+
+// इंटरनेट के बिना भी चलाने के लिए (sw.js)
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+}
