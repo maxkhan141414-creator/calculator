@@ -672,17 +672,36 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     } else if (k === "B"){
       if (result !== null){ result = null; cur = expr.length; }
       if (cur > 0){ expr = expr.slice(0, cur - 1) + expr.slice(cur); cur--; }
-    } else if (k === "C"){
-      endSession(); expr = ""; cur = 0; result = null; savedBillFor = "";
+        } else if (k === "C"){
+      // AC दबाने पर ही हिस्ट्री में सेव करें
+      var cleanExpr = trimOps(expr);
+      if (cleanExpr && cleanExpr !== "-" && typeof saveToCalcHistory === "function") {
+        var valToSave = null;
+        if (result !== null && result !== undefined && !err) {
+          valToSave = String(result);
+        } else if (!err && typeof evaluate === "function" && typeof toPlain === "function") {
+          try {
+            valToSave = toPlain(evaluate(cleanExpr));
+          } catch(ex){}
+        }
+        if (valToSave !== null && valToSave !== undefined && valToSave !== "") {
+          try { saveToCalcHistory(cleanExpr, valToSave); } catch(ex){}
+        }
+      }
+      expr = ""; cur = 0; result = null; err = ""; savedBillFor = "";
     } else if (k === "="){
       if (result !== null) return;
       var e = trimOps(expr);
       if (!e || e === "-") return;
-      try { result = toPlain(evaluate(e)); expr = e; cur = e.length; }
-      catch(ex){ err = errKey(ex); }
-    }
-    render(); saveState();
-  }
+      try {
+        result = toPlain(evaluate(e));
+        expr = e;
+        cur = e.length;
+        err = "";
+      } catch(ex){
+        err = (typeof errKey === "function") ? errKey(ex) : "err";
+      }
+
 
   function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result, tr: trail})); }
   function loadState(){
