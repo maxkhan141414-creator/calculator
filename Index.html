@@ -943,26 +943,35 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     updateTotals();
   }
   // बिल अपने-आप सेव: बदलाव के आधा सेकंड बाद, एक ही बिल = एक ही एंट्री
-  function touchBill(){ bill.dirty = true; clearTimeout(billTimer); billTimer = setTimeout(function(){ saveBillNow(false); }, 500); }
-  function saveBillNow(force){
-    if (!bill || (!bill.dirty && !force)) return;
-    clearTimeout(billTimer);
-    var shop = $("billShop").value.trim(), seller = $("billSeller").value.trim(), customer = $("billCustomer").value.trim();
-    if (!bill.items.length && !shop && !seller && !customer) return;                    // पूरी तरह खाली बिल नहीं सँजोना
-    if (!bill.id) bill.id = nextId();
+    function touchBill(){
+    if (bill) bill.dirty = true;
+  }
+  function saveBillToHistory(){
+    if (!bill || !Array.isArray(bill.items) || !bill.items.length) return;
+    var shop = ($("billShop") && $("billShop").value || "").trim();
+    var seller = ($("billSeller") && $("billSeller").value || "").trim();
+    var customer = ($("billCustomer") && $("billCustomer").value || "").trim();
+    var items = bill.items.map(function(it){
+      return {s: it.s === "-" ? "-" : "+", x: String(it.x || "0"), v: String(it.v || "0"), n: (it.n || "").trim()};
+    });
+    if (!shop && !seller && !customer && !items.some(function(it){ return it.n || parseFloat(it.v); })) return;
+    if (!bill.id) bill.id = typeof nextId === "function" ? nextId() : Date.now();
     var rec = {
-      k: "bill", shop: shop, seller: seller, customer: customer,
-      items: bill.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: (it.n || "").trim()}; }),
-      e: bill.items.map(function(it, i){ return (i === 0 ? (it.s === "-" ? "-" : "") : it.s) + it.x; }).join(""),
-      r: itemsTotal(bill.items), t: bill.id
+      k: "bill", shop: shop, seller: seller, customer: customer, items: items,
+      e: items.map(function(it, i){ return (i === 0 && it.s === "-" ? "-" : i ? it.s : "") + it.x; }).join(""),
+      r: itemsTotal(items), t: bill.id
     };
-    records = records.filter(function(h){ return !(h.k === "bill" && h.t === rec.t); });
-    records.unshift(rec); records = records.slice(0, MAX_REC); saveRecords();
+    window.billRecords = (Array.isArray(window.billRecords) ? window.billRecords : []).filter(function(h){ return h.t !== rec.t; });
+    billRecords.unshift(rec);
+    billRecords = billRecords.slice(0, typeof MAX_REC === "number" ? MAX_REC : 100);
+    if (typeof saveBillRecords === "function") saveBillRecords();
     lsSet(SHOPKEY, shop); lsSet(SELLERKEY, seller);
-    if (bill.key) savedBillFor = bill.key;
     bill.dirty = false;
   }
-  function closeBill(){ saveBillNow(false); sheet("bill", false); }
+  function closeBill(){
+    sheet("bill", false);
+  }
+
   ["billShop", "billSeller", "billCustomer"].forEach(function(id){ $(id).addEventListener("input", function(){ if (bill) touchBill(); }); });
   $("billBtn").addEventListener("click", openBillFromExpr);
   $("billCloseBtn").addEventListener("click", closeBill);
