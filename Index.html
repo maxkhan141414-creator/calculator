@@ -1432,9 +1432,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   $("billPdfBtn").addEventListener("click", openPdfPreview);
   $("pdfCloseAction").addEventListener("click", closePdfPreview);
-  $("pdfDownloadAction").addEventListener("click", function(){ saveBillNow(true); downloadBill(); });
-  $("pdfShareAction").addEventListener("click", function(){ saveBillNow(true); shareBill(); });
-  $("pdfPrintAction").addEventListener("click", function(){ saveBillNow(true); printBill(); });
+    $("pdfDownloadAction").addEventListener("click", downloadBill);
+  $("pdfShareAction").addEventListener("click", shareBill);
+  $("pdfPrintAction").addEventListener("click", printBill);
 
   // ===== 11. हिस्ट्री =====
   function renderHistory(){
