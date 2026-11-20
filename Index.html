@@ -1623,7 +1623,64 @@ function renderHistory(){
   on("openHist", function(){ sheet("settings", false); renderHistory(); sheet("hist", true); });
   on("setClose", function(){ sheet("settings", false); });
   on("histClose", function(){ sheet("hist", false); });
-  on("histClear", function(){ records = []; saveRecords(); renderHistory(); });
+    // नए हिस्ट्री टैब्स के लिए इवेंट्स
+  function switchHistTab(tabName){
+    if (tabName !== "calc" && tabName !== "bill") return;
+    if (typeof activeHistTab !== "undefined") {
+      activeHistTab = tabName;
+    }
+    if (typeof renderHistory === "function") {
+      renderHistory();
+    }
+  }
+
+  on("btnHistCalc", function(){ switchHistTab("calc"); });
+  on("btnHistBill", function(){ switchHistTab("bill"); });
+
+  // हिस्ट्री साफ करने का नया लॉजिक (सिर्फ खुले हुए टैब को साफ करेगा)
+  var clearingHistory = false;
+  on("histClear", function(){
+    if (clearingHistory) return;
+    clearingHistory = true;
+
+    try {
+      var isCalc = (typeof activeHistTab === "string") ? (activeHistTab === "calc") : true;
+      var msg = isCalc
+        ? "क्या आप कैलकुलेशन हिस्ट्री को साफ करना चाहते हैं?"
+        : "क्या आप बिल हिस्ट्री को साफ करना चाहते हैं?";
+
+      if (typeof confirm === "function" && !confirm(msg)) {
+        return;
+      }
+
+      if (isCalc) {
+        if (typeof calcRecords !== "undefined") {
+          calcRecords = [];
+        }
+        if (typeof saveCalcRecords === "function") {
+          saveCalcRecords();
+        } else if (typeof saveState === "function") {
+          saveState();
+        }
+      } else {
+        if (typeof billRecords !== "undefined") {
+          billRecords = [];
+        }
+        if (typeof saveBillRecords === "function") {
+          saveBillRecords();
+        } else if (typeof saveState === "function") {
+          saveState();
+        }
+      }
+
+      if (typeof renderHistory === "function") {
+        renderHistory();
+      }
+    } finally {
+      clearingHistory = false;
+    }
+  });
+      
   on("settings", function(ev){ if (ev.target === $("settings")) sheet("settings", false); });
   on("hist", function(ev){ if (ev.target === $("hist")) sheet("hist", false); });
   on("bill", function(ev){ if (ev.target === $("bill")) closeBill(); });
