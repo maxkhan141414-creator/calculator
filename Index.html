@@ -478,20 +478,30 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
 
   // ===== 4. स्टोरेज और सेव की हुई सेटिंग =====
-  var HKEY = "shabd_calc_history_v3", STKEY = "shabd_calc_state", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui",
+  var CKEY = "shabd_calc_calc_hist_v4", BKEY = "shabd_calc_bill_hist_v4", STKEY = "shabd_calc_state", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui",
       TKEY = "shabd_calc_theme", SKEY = "shabd_calc_sound", SHOPKEY = "shabd_calc_shop", SELLERKEY = "shabd_calc_seller";
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
 
-  function validRecord(h){
-    return h && typeof h.e === "string" && typeof h.r === "string" && (h.k !== "bill" || Array.isArray(h.items));
+  var calcRecords = [], billRecords = [];
+  function parseHistList(key, mode){
+    try {
+      var raw = JSON.parse(lsGet(key) || "[]");
+      if (!Array.isArray(raw)) return [];
+      return raw.filter(function(item){
+        if (!item || typeof item !== "object") return false;
+        if (mode === "bill") return item.k === "bill" && Array.isArray(item.items);
+        return typeof item.e === "string" && typeof item.r === "string";
+      });
+    } catch(e){ return []; }
   }
-  var records = [];
-  try { records = JSON.parse(lsGet(HKEY) || lsGet("shabd_calc_history_named") || lsGet("shabd_calc_history") || "[]"); } catch(e){}
-  if (!Array.isArray(records)) records = [];
-  records = records.filter(validRecord);
-  function saveRecords(){ lsSet(HKEY, JSON.stringify(records.slice(0, MAX_REC))); }
+  calcRecords = parseHistList(CKEY, "calc");
+  billRecords = parseHistList(BKEY, "bill");
 
+  function getHistLimit(){ return (typeof MAX_REC === "number" && MAX_REC > 0) ? MAX_REC : 60; }
+  function saveCalcRecords(){ lsSet(CKEY, JSON.stringify(calcRecords.slice(0, getHistLimit()))); }
+  function saveBillRecords(){ lsSet(BKEY, JSON.stringify(billRecords.slice(0, getHistLimit()))); }
+  
   var lang = lsGet(LKEY);
   if (lang !== "hi" && lang !== "en" && lang !== "off") lang = "hi";
   var uiLang = lsGet(UKEY);
