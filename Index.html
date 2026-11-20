@@ -592,30 +592,36 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     expr = result; cur = expr.length; result = null;
   }
 
-  function addAuto(e, r){
-    for (var i = 0; i < records.length; i++){
-      if (records[i].e === e && records[i].r === r){
-        if (records[i].k === "bill") return;
-        records.splice(i, 1); break;
-      }
+    function saveToCalcHistory(e, r){
+    var exprStr = (e === null || e === undefined) ? "" : String(e).trim();
+    var resStr = (r === null || r === undefined) ? "" : String(r).trim();
+
+    // खाली हिसाब, सिर्फ '-', या खाली/अमान्य/0 रिजल्ट होने पर सेव न करें
+    if (!exprStr || exprStr === "-" || !resStr || resStr === "0") return;
+    if (resStr === "NaN" || resStr === "Infinity" || resStr === "-Infinity") return;
+
+    // बिना किसी ऑपरेटर के सिर्फ एक साधारण नंबर (जैसे 50 या -12.5) होने पर सेव न करें
+    if (/^[+-]?\d+(?:\.\d+)?$/.test(exprStr)) return;
+
+    if (!Array.isArray(calcRecords)) calcRecords = [];
+
+    var limit = 60;
+    if (typeof getHistLimit === "function") {
+      limit = getHistLimit();
+    } else if (typeof MAX_REC === "number" && isFinite(MAX_REC) && MAX_REC > 0) {
+      limit = MAX_REC;
     }
-    records.unshift({e: e, r: r, t: Date.now()});
-    records = records.slice(0, MAX_REC); saveRecords();
+
+    calcRecords.unshift({ e: exprStr, r: resStr, t: Date.now() });
+    if (calcRecords.length > limit) {
+      calcRecords = calcRecords.slice(0, limit);
+    }
+
+    if (typeof saveCalcRecords === "function") {
+      saveCalcRecords();
+    }
   }
-  function endSession(){
-    var steps = trail.slice(), seg = null, key = result !== null ? expr : trimOps(expr);
-    if (key && key === savedBillFor){ trail = []; savedBillFor = ""; return; }
-    if (result !== null) seg = {e: expr, r: result};
-    else if (key && key !== "-"){ try { seg = {e: key, r: toPlain(evaluate(key))}; } catch(ex){} }
-    if (seg){
-      var onlyNumber = /^-?\d*\.?\d+$/.test(seg.e);
-      if (!(onlyNumber && (steps.length || parseFloat(seg.e) === 0))) steps.push(seg);
-    }
-    if (steps.length){
-      addAuto(steps.map(function(z, i){ return i < steps.length - 1 ? z.e + " = " + z.r : z.e; }).join(", "), steps[steps.length - 1].r);
-    }
-    trail = []; savedBillFor = "";
-  }
+
 
   function toggleSign(){
     var nb = numAround(cur), s = nb[0];
