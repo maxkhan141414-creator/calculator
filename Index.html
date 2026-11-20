@@ -1436,35 +1436,100 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("pdfShareAction").addEventListener("click", shareBill);
   $("pdfPrintAction").addEventListener("click", printBill);
 
-  // ===== 11. हिस्ट्री =====
-  function renderHistory(){
-    var list = $("list"); list.innerHTML = "";
-    if (!storageOk) list.appendChild(el("div", "empty", t("noStore")));
-    if (!records.length){ list.appendChild(el("div", "empty", t("noHist"))); return; }
-    records.forEach(function(h){
-      var b = el("button", "item"); b.type = "button";
-      if (h.k === "bill"){
-        var head = el("div", "ttl"), who = h.customer || h.shop || h.seller || t("billTag");
-        head.appendChild(el("span", "", who)); head.appendChild(el("span", "tag", t("billTag")));
-        b.appendChild(head);
-        var sub = [h.shop, h.seller].filter(function(x){ return x && x !== who; }).join(" · ");
-        if (sub) b.appendChild(el("small", "", sub));
-        b.appendChild(el("small", "", h.items.length + " " + t("lines")));
-        b.appendChild(el("b", "", formatNum(splitNum(h.r))));
-        b.addEventListener("click", function(){ sheet("hist", false); openBillRecord(h); });
-      } else {
-        if (h.name) b.appendChild(el("div", "ttl", h.name));
-        b.appendChild(el("small", "", prettyExpr(h.e) + " ="));
-        b.appendChild(el("b", "", formatNum(splitNum(h.r))));
-        b.addEventListener("click", function(){
-          endSession(); trail = []; expr = h.r; cur = expr.length; result = null; err = "";
-          sheet("hist", false); render(); saveState();
-        });
-      }
-      if (h.t) b.appendChild(el("small", "", fmtWhen(h.t)));
-      list.appendChild(b);
-    });
+  // ===== 11. हिस्ट्री (नया लॉजिक) =====
+var activeHistTab = (typeof activeHistTab === "string" && (activeHistTab === "calc" || activeHistTab === "bill"))
+  ? activeHistTab
+  : "calc";
+
+function renderHistory(){
+  var isBill = activeHistTab === "bill";
+  var btnCalc = $("btnHistCalc");
+  var btnBill = $("btnHistBill");
+
+  if (btnCalc) {
+    btnCalc.style.background = !isBill ? "var(--eq)" : "var(--op)";
+    btnCalc.style.color = !isBill ? "var(--eq-text)" : "var(--op-text)";
   }
+  if (btnBill) {
+    btnBill.style.background = isBill ? "var(--eq)" : "var(--op)";
+    btnBill.style.color = isBill ? "var(--eq-text)" : "var(--op-text)";
+  }
+
+  var list = $("list");
+  if (!list) return;
+  list.innerHTML = "";
+
+  if (typeof storageOk !== "undefined" && !storageOk && typeof t === "function") {
+    list.appendChild(el("div", "empty", t("noStore")));
+  }
+
+  var srcList = isBill
+    ? (typeof billRecords !== "undefined" && Array.isArray(billRecords) ? billRecords : [])
+    : (typeof calcRecords !== "undefined" && Array.isArray(calcRecords) ? calcRecords : []);
+
+  if (!srcList.length) {
+    var emptyMsg = isBill
+      ? ((typeof t === "function" && t("noBillHist") !== "noBillHist") ? t("noBillHist") : "कोई बिल नहीं है।")
+      : (typeof t === "function" ? t("noHist") : "कोई हिस्ट्री नहीं है।");
+    list.appendChild(el("div", "empty", emptyMsg));
+    return;
+  }
+
+  srcList.forEach(function(h){
+    if (!h || typeof h !== "object") return;
+    var b = el("button", "item");
+    b.type = "button";
+
+    if (isBill) {
+      var fallbackTag = typeof t === "function" ? t("billTag") : "Bill";
+      var head = el("div", "ttl");
+      var who = h.customer || h.shop || h.seller || fallbackTag;
+      head.appendChild(el("span", "", String(who)));
+      head.appendChild(el("span", "tag", String(fallbackTag)));
+      b.appendChild(head);
+
+      var sub = [h.shop, h.seller].filter(function(x){ return x && x !== who; }).join(" · ");
+      if (sub) b.appendChild(el("small", "", String(sub)));
+
+      var itemsArr = Array.isArray(h.items) ? h.items : [];
+      var linesLabel = typeof t === "function" ? t("lines") : "lines";
+      b.appendChild(el("small", "", itemsArr.length + " " + linesLabel));
+
+      var billVal = h.r !== undefined && h.r !== null ? h.r : (h.total !== undefined ? h.total : 0);
+      b.appendChild(el("b", "", formatNum(splitNum(billVal))));
+
+      b.addEventListener("click", function(){
+        if (typeof sheet === "function") sheet("hist", false);
+        if (typeof openBillRecord === "function") openBillRecord(h);
+      });
+    } else {
+      if (h.name) b.appendChild(el("div", "ttl", String(h.name)));
+      var rawExpr = h.e !== undefined && h.e !== null ? String(h.e) : "";
+      b.appendChild(el("small", "", prettyExpr(rawExpr) + " ="));
+
+      var calcVal = h.r !== undefined && h.r !== null ? String(h.r) : "";
+      b.appendChild(el("b", "", formatNum(splitNum(calcVal))));
+
+      b.addEventListener("click", function(){
+        if (typeof endSession === "function") endSession();
+        if (typeof trail !== "undefined") trail = [];
+        expr = calcVal;
+        cur = expr.length;
+        result = null;
+        err = "";
+        if (typeof sheet === "function") sheet("hist", false);
+        if (typeof render === "function") render();
+        if (typeof saveState === "function") saveState();
+      });
+    }
+
+    if (h.t && typeof fmtWhen === "function") {
+      b.appendChild(el("small", "", fmtWhen(h.t)));
+    }
+    list.appendChild(b);
+  });
+}
+
 
   // ===== 12. थीम, आवाज़ और सेटिंग्स =====
   function svg(inner){
