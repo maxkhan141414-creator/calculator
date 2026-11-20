@@ -853,11 +853,35 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   // ===== 9. बिल वाला पन्ना =====
   var bill = null, billTimer = null;
-  function nextId(){                                    // हर बिल की अपनी अलग पहचान (समय पर आधारित)
-    var m = Date.now();
-    records.forEach(function(h){ if (typeof h.t === "number" && h.t >= m) m = h.t + 1; });
+    function nextId(){                                    // हर बिल की अपनी अलग पहचान (समय पर आधारित)
+    var now = Date.now();
+    var m = (typeof now === "number" && Number.isFinite(now)) ? Math.floor(now) : 1;
+
+    function scanList(arr){
+      if (!Array.isArray(arr)) return;
+      for (var i = 0; i < arr.length; i++){
+        var h = arr[i];
+        if (!h || typeof h !== "object") continue;
+        if (typeof h.t === "number" && Number.isFinite(h.t) && h.t >= m){
+          m = Math.floor(h.t) + 1;
+        }
+        if (typeof h.id === "number" && Number.isFinite(h.id) && h.id >= m){
+          m = Math.floor(h.id) + 1;
+        }
+      }
+    }
+
+    if (typeof calcRecords !== "undefined") scanList(calcRecords);
+    if (typeof billRecords !== "undefined") scanList(billRecords);
+
+    if (typeof nextId._last === "number" && Number.isFinite(nextId._last) && nextId._last >= m){
+      m = nextId._last + 1;
+    }
+
+    nextId._last = m;
     return m;
   }
+
   function openBillFromExpr(){
     var e = result !== null ? expr : trimOps(expr), items = [];
     if (e && e !== "-"){
