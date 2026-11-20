@@ -1352,34 +1352,78 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
   function closePdfPreview(){ $("pdfOverlay").classList.remove("open"); }
 
-  function downloadBill(){
+    function downloadBill(){
+    if (typeof saveBillToHistory === "function") {
+      try { saveBillToHistory(); } catch (e) {}
+    }
+    if (downloadBill._busy) return;
+    downloadBill._busy = true;
     toast(t("preparing"));
     makePdfBlob().then(function(blob){
-      var url = URL.createObjectURL(blob), a = document.createElement("a");
-      a.href = url; a.download = pdfFileName(); a.style.display = "none";
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = pdfFileName();
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
       toast(t("downloaded"));
-    }).catch(function(){ toast(t("pdfFail")); });
+    }).catch(function(){
+      toast(t("pdfFail"));
+    }).finally(function(){
+      downloadBill._busy = false;
+    });
   }
+
   function shareBill(){
-    var title = $("billShop").value.trim() || I18N[uiLang].pdf.bill;
+    if (typeof saveBillToHistory === "function") {
+      try { saveBillToHistory(); } catch (e) {}
+    }
+    var shopEl = $("billShop");
+    var fallbackTitle = (I18N && I18N[uiLang] && I18N[uiLang].pdf && I18N[uiLang].pdf.bill) || "Bill";
+    var title = (shopEl && shopEl.value ? shopEl.value.trim() : "") || fallbackTitle;
     function textShare(){
       var text = billText();
-      if (navigator.share){ return navigator.share({title: title, text: text}).catch(function(e){ if (!e || e.name !== "AbortError") return copyText(text).then(function(ok){ toast(ok ? t("textCopied") : t("copyFail")); }); }); }
-      return copyText(text).then(function(ok){ toast(ok ? t("textCopied") : t("copyFail")); });
+      if (navigator.share) {
+        return navigator.share({title: title, text: text}).catch(function(err){
+          if (err && err.name === "AbortError") return;
+          throw err;
+        });
+      }
+      return copyText(text).then(function(ok){
+        toast(ok ? t("textCopied") : t("shareFail"));
+      });
     }
     makePdfBlob().then(function(blob){
       var file = null;
-      try { file = new File([blob], pdfFileName(), {type: "application/pdf"}); } catch(e){}
-      if (file && navigator.canShare && navigator.canShare({files: [file]})){
-        return navigator.share({files: [file], title: title}).catch(function(e){ if (!e || e.name !== "AbortError") return textShare(); });
+      try {
+        file = new File([blob], pdfFileName(), {type: "application/pdf"});
+      } catch (e) {}
+      if (file && navigator.canShare && navigator.canShare({files: [file]})) {
+        return navigator.share({files: [file], title: title}).catch(function(err){
+          if (err && err.name === "AbortError") return;
+          return textShare();
+        });
       }
       return textShare();
-    }).catch(function(){ return textShare(); });
+    }).catch(function(){
+      return textShare();
+    });
   }
-  function printBill(){                                 // पूरा पन्ना बदले बिना: सिर्फ़ प्रिंट के समय बाकी सब छिपता है
-    var done = function(){ document.body.classList.remove("printing"); window.removeEventListener("afterprint", done); };
+
+  function printBill(){
+    if (typeof saveBillToHistory === "function") {
+      try { saveBillToHistory(); } catch (e) {}
+    }
+    var finished = false;
+    var done = function(){
+      if (finished) return;
+      finished = true;
+      document.body.classList.remove("printing");
+      window.removeEventListener("afterprint", done);
+    };
     document.body.classList.add("printing");
     window.addEventListener("afterprint", done);
     setTimeout(done, 120000);
