@@ -270,6 +270,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 <div class="overlay" id="hist">
   <div class="sheet" role="dialog" data-ia="history">
     <h2 data-i="histTitle"></h2>
+    <div role="tablist" style="display:flex; gap:8px; margin:6px 0 12px;">
+      <button id="btnHistCalc" type="button" role="tab" aria-selected="true" style="flex:1; min-height:42px; padding:10px 12px; border:0; border-radius:12px; font-weight:700; background:var(--eq); color:var(--eq-text); cursor:pointer;">Calculation</button>
+      <button id="btnHistBill" type="button" role="tab" aria-selected="false" style="flex:1; min-height:42px; padding:10px 12px; border:0; border-radius:12px; font-weight:700; background:var(--op); color:var(--op-text); cursor:pointer;">Billing</button>
+    </div>
     <div class="list" id="list"></div>
     <div class="actions">
       <button type="button" id="histClear" class="danger" data-i="clearHist"></button>
