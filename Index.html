@@ -1368,7 +1368,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
   function openPdfPreview(){
     if (!bill.items.length){ toast(t("noLines")); return; }
-    saveBillNow(true);
+    saveBillToHistory();
     showPages(); buildDesignChips();
     $("pdfTitle").textContent = $("billShop").value.trim() || (I18N[uiLang].pdf.bill + " • " + formatNum(splitNum(itemsTotal(bill.items))));
     $("pdfOverlay").classList.add("open");
@@ -1709,7 +1709,6 @@ function renderHistory(){
   applyTheme();
   applyUi();
   render();
-})();
 
     // ===== STEP 9: सिर्फ कैलकुलेटर की स्थिति सेव रखना (Advance & Safe) =====
   (function(){
@@ -1746,7 +1745,7 @@ function renderHistory(){
       window.addEventListener("pagehide", handlePageHide);
     }
   })();
-  
+  })();
 </script>
 <script>
 if ("serviceWorker" in navigator) {
