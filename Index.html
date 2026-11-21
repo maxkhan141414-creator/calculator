@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -22,7 +23,7 @@
 <style>
 /* ===== रंग ===== */
 :root{
-  --bg:#e8ecf4; --p1:#ffffff; --p2:#eef2f9; --panel-text:#000000; --panel-sub:#55627f; --gold:#8a4b00;
+  --bg:#e8ecf4; --p1:#ffffff; --p2:#eef2fa; --panel-text:#000000; --panel-sub:#55627f; --gold:#8a4b00;
   --panel-line:#d3dbea; --panel-shadow:0 8px 20px rgba(30,50,100,.13); --soft:rgba(10,20,50,.07);
   --key:#ffffff; --key-text:#14213d; --edge:#c5cee0; --op:#d9e1f1; --op-text:#14213d; --op-edge:#b8c4de;
   --action:#e2e8f0; --action-text:#3b4b6b;
@@ -52,8 +53,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
 /* ===== डिस्प्ले ===== */
 .panel{background:linear-gradient(160deg,var(--p1),var(--p2));color:var(--panel-text);border:1px solid var(--panel-line);border-radius:24px;padding:14px;box-shadow:var(--panel-shadow);display:flex;flex-direction:column;min-height:42%}
+.app.kb-active .panel{flex:0 0 auto;min-height:220px}
+.app.kb-active .pad{display:none}
 .top{display:flex;align-items:center;gap:8px}
 .round{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--soft);color:var(--panel-text);display:grid;place-items:center;cursor:pointer}
+.round.on{background:var(--eq);color:var(--eq-text)}
+.kb-switch{margin-left:auto}
+.kb-hidden-input{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
 .display-area{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:6px 2px}
 .expr,.main{width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
 .expr::-webkit-scrollbar,.main::-webkit-scrollbar{display:none}
@@ -113,6 +119,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .empty{color:var(--panel-sub);text-align:center;padding:16px 0}
 
 /* ===== हिस्ट्री ===== */
+.hist-tabs{display:flex;gap:8px;margin:2px 0 4px}
+.hist-tab{flex:1;min-height:42px;padding:10px 12px;border:0;border-radius:12px;font:inherit;font-weight:700;background:var(--op);color:var(--op-text);cursor:pointer}
+.hist-tab[aria-selected="true"]{background:var(--eq);color:var(--eq-text)}
 .list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;max-height:46vh}
 .item{background:var(--key);border:0;border-radius:12px;padding:12px;text-align:right;font:inherit;color:var(--key-text);cursor:pointer;box-shadow:0 2px 0 var(--edge);width:100%}
 .item .ttl{display:flex;justify-content:space-between;gap:8px;color:var(--gold);font-weight:700;text-align:left}
@@ -191,11 +200,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="appRoot">
+  <input id="kbInput" class="kb-hidden-input" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true">
   <section class="panel">
     <div class="top">
       <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="round" id="themeBtn" type="button" data-ia="theme"></button>
+      <button class="round kb-switch" id="kbBtn" type="button" aria-pressed="false" data-ia="kbSwitch"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"/><line x1="6" y1="9" x2="6.01" y2="9"/><line x1="10" y1="9" x2="10.01" y2="9"/><line x1="14" y1="9" x2="14.01" y2="9"/><line x1="18" y1="9" x2="18.01" y2="9"/><line x1="6" y1="13" x2="6.01" y2="13"/><line x1="10" y1="13" x2="10.01" y2="13"/><line x1="14" y1="13" x2="14.01" y2="13"/><line x1="18" y1="13" x2="18.01" y2="13"/><line x1="8" y1="16" x2="16" y2="16"/></svg></button>
     </div>
 
     <div class="display-area">
@@ -270,9 +281,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 <div class="overlay" id="hist">
   <div class="sheet" role="dialog" data-ia="history">
     <h2 data-i="histTitle"></h2>
-    <div role="tablist" style="display:flex; gap:8px; margin:6px 0 12px;">
-      <button id="btnHistCalc" type="button" role="tab" aria-selected="true" style="flex:1; min-height:42px; padding:10px 12px; border:0; border-radius:12px; font-weight:700; background:var(--eq); color:var(--eq-text); cursor:pointer;">Calculation</button>
-      <button id="btnHistBill" type="button" role="tab" aria-selected="false" style="flex:1; min-height:42px; padding:10px 12px; border:0; border-radius:12px; font-weight:700; background:var(--op); color:var(--op-text); cursor:pointer;">Billing</button>
+    <div class="hist-tabs" role="tablist">
+      <button id="btnHistCalc" class="hist-tab" type="button" role="tab" aria-selected="true" data-i="histCalcTab"></button>
+      <button id="btnHistBill" class="hist-tab" type="button" role="tab" aria-selected="false" data-i="histBillTab"></button>
     </div>
     <div class="list" id="list"></div>
     <div class="actions">
@@ -314,9 +325,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     <button class="pbtn close" id="pdfCloseAction" type="button" data-ia="close"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="pdf-title" id="pdfTitle"></div>
     <div class="pdf-tools">
-      <button class="pbtn" id="pdfShareAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg><span data-i="share"></span></button>
+      <button class="pbtn" id="pdfShareAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span data-i="share"></span></button>
       <button class="pbtn" id="pdfPrintAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span data-i="print"></span></button>
-      <button class="pbtn primary" id="pdfDownloadAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 21h14"/></svg><span data-i="download"></span></button>
+      <button class="pbtn primary" id="pdfDownloadAction" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i="download"></span></button>
     </div>
   </div>
   <div class="pdf-designs" id="pdfDesigns" role="group" data-ia="designPick"></div>
@@ -327,6 +338,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
 <script>
 (function(){
+  "use strict";
   var $ = function(id){ return document.getElementById(id); };
   function el(tag, cls, text){ var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
 
@@ -362,7 +374,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (r) out.push({v: r, u: ""});
     return out;
   }
-  // 100 से छोटी संख्या शब्द में, बड़ी अंक + इकाई में ("1 लाख 50 हज़ार")
   function wordsOf(parts, d){
     if (!parts.length) return d.nums[0];
     if (parts.length === 1 && parts[0].u === "") return d.nums[parts[0].v];
@@ -376,6 +387,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     return whole.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + whole.slice(-3);
   }
   function splitNum(value){
+    value = String(value);
     var neg = value.charAt(0) === "-", abs = neg ? value.slice(1) : value, dot = abs.indexOf(".");
     var whole = dot === -1 ? abs : abs.slice(0, dot);
     return {neg: neg, whole: whole === "" ? "0" : whole.replace(/^0+(?=\d)/, ""), frac: dot === -1 ? "" : abs.slice(dot + 1), dot: dot !== -1};
@@ -392,7 +404,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
 
   // ===== 3. गणना (बिना eval) =====
-  // % : 50% = 0.5 ; 200+10% = 220 ; 200−10% = 180 ; 200×10% = 20
   function evaluate(str){
     var tokens = str.match(/\d+\.?\d*|\.\d+|[+\-*\/%]/g) || [], i = 0;
     function isNum(t){ return t !== undefined && /^[\d.]/.test(t); }
@@ -417,7 +428,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       while (tokens[i] === "+" || tokens[i] === "-"){
         var op = tokens[i++], r;
         if (isNum(tokens[i]) && tokens[i + 1] === "%" && (tokens[i + 2] === undefined || tokens[i + 2] === "+" || tokens[i + 2] === "-")){
-          r = v * parseFloat(tokens[i]) / 100; i += 2;      // जोड़ने/घटाने में % कुल का हिस्सा है
+          r = v * parseFloat(tokens[i]) / 100; i += 2;
         } else r = term();
         v = op === "+" ? v + r : v - r;
       }
@@ -428,8 +439,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (!isFinite(res)) throw new Error("inf");
     return res;
   }
-  // जवाब को साफ़ रूप देना: 15 अंक तक गोल (0.30000000000000004 -> 0.3), दशमलव के बाद 10 अंक तक
-  function plainDecimal(s){                              // 1.5e-7 जैसे रूप को साधारण दशमलव में बदलना
+  function plainDecimal(s){
     var m = /^(-?)(\d)(?:\.(\d+))?e([+-]\d+)$/.exec(s);
     if (!m) return s;
     var digits = m[2] + (m[3] || ""), exp = parseInt(m[4], 10);
@@ -450,7 +460,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   function errKey(ex){ return ex && ex.message === "div0" ? "eDiv" : (ex && ex.message === "big" ? "eBig" : "eBad"); }
   function trimOps(e){ return e.replace(/[+\-*\/]+$/, ""); }
 
-  // हिसाब को जोड़-घटाव की लाइनों में तोड़ना: "32×12+86−5" -> [+32×12, +86, −5]
   function parseTerms(e){
     var raw = [], sign = "+", start = 0, c = 0;
     if (e.charAt(0) === "-"){ sign = "-"; start = 1; }
@@ -498,10 +507,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   calcRecords = parseHistList(CKEY, "calc");
   billRecords = parseHistList(BKEY, "bill");
 
-  function getHistLimit(){ return (typeof MAX_REC === "number" && MAX_REC > 0) ? MAX_REC : 60; }
-  function saveCalcRecords(){ lsSet(CKEY, JSON.stringify(calcRecords.slice(0, getHistLimit()))); }
-  function saveBillRecords(){ lsSet(BKEY, JSON.stringify(billRecords.slice(0, getHistLimit()))); }
-  
+  function saveCalcRecords(){ lsSet(CKEY, JSON.stringify(calcRecords.slice(0, MAX_REC))); }
+  function saveBillRecords(){ lsSet(BKEY, JSON.stringify(billRecords.slice(0, MAX_REC))); }
+
   var lang = lsGet(LKEY);
   if (lang !== "hi" && lang !== "en" && lang !== "off") lang = "hi";
   var uiLang = lsGet(UKEY);
@@ -514,32 +522,40 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   // ===== 5. ऐप की भाषा, तारीख़ और छोटा संदेश =====
   var I18N = {
-    hi: {title:"बिलिंग कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
+    hi: {title:"बिलिंग कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", kbSwitch:"फ़ोन कीबोर्ड बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
          billBtn:"बिल बनाएँ", speakBtn:"बोलकर सुनें", copyBtn:"कॉपी करें", pasteBtn:"पेस्ट करें",
          langLabel:"भाषा (शब्द कैसे दिखें)", off:"बंद करें", soundLabel:"बटन की आवाज़", soundOn:"चालू", soundOff:"बंद",
          viewHist:"हिस्ट्री देखें", close:"बंद करें", histTitle:"पिछले हिसाब", clearHist:"हिस्ट्री साफ़ करें",
-         noHist:"अभी कोई हिसाब नहीं है।", noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है, इसलिए बंद होने पर हिस्ट्री मिट सकती है।",
+         histCalcTab:"हिसाब", histBillTab:"बिल",
+         confirmClearCalc:"क्या आप कैलकुलेशन हिस्ट्री को साफ़ करना चाहते हैं?",
+         confirmClearBill:"क्या आप बिल हिस्ट्री को साफ़ करना चाहते हैं?",
+         noHist:"अभी कोई हिसाब नहीं है।", noBillHist:"अभी कोई बिल नहीं है।",
+         noStore:"इस व्यू में फ़ोन का स्टोरेज बंद है, इसलिए बंद होने पर हिस्ट्री मिट सकती है।",
          err:"त्रुटि", eDiv:"0 से भाग नहीं हो सकता", eBig:"संख्या बहुत बड़ी है", eBad:"हिसाब सही नहीं है",
          copied:"कॉपी हो गया", copyFail:"कॉपी नहीं हो पाया", pasted:"पेस्ट हो गया", pasteFail:"पेस्ट नहीं हो पाया", notNum:"यह संख्या या हिसाब नहीं लगता",
-         speakNo:"इस फ़ोन में बोलने की सुविधा नहीं है", needExpr:"पहले कोई हिसाब लिखिए",
+         speakNo:"इस फ़ोन में बोलने की सुविधा नहीं है",
          billTitle:"बिल / हिसाब", pdfBtn:"PDF देखें", shopPh:"दुकान का नाम (चाहें तो)", sellerPh:"विक्रेता का नाम", customerPh:"ग्राहक का नाम",
          itemPh:"सामान का नाम", amtPh:"0", total:"कुल", remove:"यह लाइन हटाएँ", addLine:"नई लाइन जोड़ें", noLines:"कोई लाइन नहीं है।", billTag:"बिल", lines:"लाइन",
          share:"शेयर", print:"प्रिंट", download:"डाउनलोड", preparing:"PDF बन रही है…", downloaded:"PDF डाउनलोड हो गई", pdfFail:"PDF नहीं बन पाई",
-         textCopied:"बिल का लिखा रूप कॉपी हो गया", designPick:"डिज़ाइन चुनें",
+         textCopied:"बिल का लिखा रूप कॉपी हो गया", shareFail:"शेयर नहीं हो पाया", designPick:"डिज़ाइन चुनें",
          pdf:{bill:"बिल", seller:"विक्रेता", customer:"ग्राहक", item:"सामान", amount:"राशि", total:"कुल", inWords:"शब्दों में",
               itemN:"सामान", lineCount:"कुल लाइनें"}},
-    en: {title:"Billing Calculator", settings:"Settings", theme:"Switch theme", history:"History", erase:"Erase",
+    en: {title:"Billing Calculator", settings:"Settings", theme:"Switch theme", kbSwitch:"Switch phone keyboard", history:"History", erase:"Erase",
          billBtn:"Make a bill", speakBtn:"Listen", copyBtn:"Copy", pasteBtn:"Paste",
          langLabel:"Language (how words appear)", off:"Off", soundLabel:"Button sound", soundOn:"On", soundOff:"Off",
          viewHist:"View history", close:"Close", histTitle:"Past calculations", clearHist:"Clear history",
-         noHist:"No calculations yet.", noStore:"Storage is unavailable in this view, so history may be lost when it closes.",
+         histCalcTab:"Calculation", histBillTab:"Billing",
+         confirmClearCalc:"Do you want to clear calculation history?",
+         confirmClearBill:"Do you want to clear billing history?",
+         noHist:"No calculations yet.", noBillHist:"No bills yet.",
+         noStore:"Storage is unavailable in this view, so history may be lost when it closes.",
          err:"Error", eDiv:"Cannot divide by 0", eBig:"Number is too large", eBad:"Invalid calculation",
          copied:"Copied", copyFail:"Could not copy", pasted:"Pasted", pasteFail:"Could not paste", notNum:"That does not look like a number or sum",
-         speakNo:"Speech is not available on this phone", needExpr:"Enter a calculation first",
+         speakNo:"Speech is not available on this phone",
          billTitle:"Bill / Statement", pdfBtn:"PDF Preview", shopPh:"Shop name (optional)", sellerPh:"Seller name", customerPh:"Customer name",
          itemPh:"Item name", amtPh:"0", total:"Total", remove:"Remove this line", addLine:"Add a line", noLines:"No lines.", billTag:"Bill", lines:"lines",
          share:"Share", print:"Print", download:"Download", preparing:"Making the PDF…", downloaded:"PDF downloaded", pdfFail:"Could not make the PDF",
-         textCopied:"Bill text copied", designPick:"Choose design",
+         textCopied:"Bill text copied", shareFail:"Could not share", designPick:"Choose design",
          pdf:{bill:"BILL", seller:"SELLER", customer:"CUSTOMER", item:"ITEM", amount:"AMOUNT", total:"TOTAL", inWords:"In words",
               itemN:"Item", lineCount:"Lines"}}
   };
@@ -577,8 +593,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   // ===== 6. हिसाब की स्थिति, कर्सर और बटन =====
   var expr = "", cur = 0, result = null, err = "";
-  var trail = [];
-  var savedBillFor = "";
+  var kbMode = false;
 
   function insertAt(s){ expr = expr.slice(0, cur) + s + expr.slice(cur); cur += s.length; }
   function numAround(p){
@@ -588,40 +603,21 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     return [s, e];
   }
   function continueFromResult(){
-    trail.push({e: expr, r: result});
     expr = result; cur = expr.length; result = null;
   }
 
-    function saveToCalcHistory(e, r){
+  function saveToCalcHistory(e, r){
     var exprStr = (e === null || e === undefined) ? "" : String(e).trim();
     var resStr = (r === null || r === undefined) ? "" : String(r).trim();
 
-    // खाली हिसाब, सिर्फ '-', या खाली/अमान्य/0 रिजल्ट होने पर सेव न करें
-    if (!exprStr || exprStr === "-" || !resStr || resStr === "0") return;
+    if (!exprStr || exprStr === "-" || !resStr) return;
     if (resStr === "NaN" || resStr === "Infinity" || resStr === "-Infinity") return;
-
-    // बिना किसी ऑपरेटर के सिर्फ एक साधारण नंबर (जैसे 50 या -12.5) होने पर सेव न करें
     if (/^[+-]?\d+(?:\.\d+)?$/.test(exprStr)) return;
 
-    if (!Array.isArray(calcRecords)) calcRecords = [];
-
-    var limit = 60;
-    if (typeof getHistLimit === "function") {
-      limit = getHistLimit();
-    } else if (typeof MAX_REC === "number" && isFinite(MAX_REC) && MAX_REC > 0) {
-      limit = MAX_REC;
-    }
-
     calcRecords.unshift({ e: exprStr, r: resStr, t: Date.now() });
-    if (calcRecords.length > limit) {
-      calcRecords = calcRecords.slice(0, limit);
-    }
-
-    if (typeof saveCalcRecords === "function") {
-      saveCalcRecords();
-    }
+    if (calcRecords.length > MAX_REC) calcRecords = calcRecords.slice(0, MAX_REC);
+    saveCalcRecords();
   }
-
 
   function toggleSign(){
     var nb = numAround(cur), s = nb[0];
@@ -635,11 +631,20 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     } else { expr = before + "-" + expr.slice(s); cur += 1; }
   }
 
+  function syncKbInput(){
+    var inp = $("kbInput");
+    if (!inp) return;
+    if (inp.value !== expr) inp.value = expr;
+    try {
+      if (document.activeElement === inp) inp.setSelectionRange(cur, cur);
+    } catch(e){}
+  }
+
   function press(k){
     err = "";
     if (/^[0-9.+\-*\/%]$/.test(k) && expr.length >= MAX_LEN) return;
     if (/^[0-9.]$/.test(k)){
-      if (result !== null){ endSession(); expr = ""; cur = 0; result = null; }
+      if (result !== null){ expr = ""; cur = 0; result = null; }
       if (expr.charAt(cur - 1) === "%") return;
       var nb = numAround(cur), tok = expr.slice(nb[0], nb[1]);
       if (k === "."){
@@ -672,23 +677,21 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     } else if (k === "B"){
       if (result !== null){ result = null; cur = expr.length; }
       if (cur > 0){ expr = expr.slice(0, cur - 1) + expr.slice(cur); cur--; }
-        } else if (k === "C"){
+    } else if (k === "C"){
       // AC दबाने पर ही हिस्ट्री में सेव करें
       var cleanExpr = trimOps(expr);
-      if (cleanExpr && cleanExpr !== "-" && typeof saveToCalcHistory === "function") {
+      if (cleanExpr && cleanExpr !== "-"){
         var valToSave = null;
         if (result !== null && result !== undefined && !err) {
           valToSave = String(result);
-        } else if (!err && typeof evaluate === "function" && typeof toPlain === "function") {
-          try {
-            valToSave = toPlain(evaluate(cleanExpr));
-          } catch(ex){}
+        } else if (!err) {
+          try { valToSave = toPlain(evaluate(cleanExpr)); } catch(ex){}
         }
         if (valToSave !== null && valToSave !== undefined && valToSave !== "") {
-          try { saveToCalcHistory(cleanExpr, valToSave); } catch(ex){}
+          saveToCalcHistory(cleanExpr, valToSave);
         }
       }
-      expr = ""; cur = 0; result = null; err = ""; savedBillFor = "";
+      expr = ""; cur = 0; result = null; err = "";
     } else if (k === "="){
       if (result !== null) return;
       var e = trimOps(expr);
@@ -699,19 +702,22 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         cur = e.length;
         err = "";
       } catch(ex){
-        err = (typeof errKey === "function") ? errKey(ex) : "err";
+        err = errKey(ex);
       }
+    }
+    render();
+    saveState();
+    if (kbMode) syncKbInput();
+  }
 
-
-  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result, tr: trail})); }
+  function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result})); }
   function loadState(){
     try {
       var st = JSON.parse(lsGet(STKEY) || "null");
       if (st && typeof st.x === "string" && st.x.length <= MAX_LEN && /^[0-9+\-*\/.%]*$/.test(st.x) &&
-          (st.r === null || /^-?[0-9.]+$/.test(st.r)) && Array.isArray(st.tr)){
+          (st.r === null || /^-?[0-9.]+$/.test(st.r))){
         expr = st.x; result = st.r;
         cur = (typeof st.c === "number" && st.c >= 0 && st.c <= st.x.length) ? st.c : st.x.length;
-        trail = st.tr.filter(function(z){ return z && typeof z.e === "string" && typeof z.r === "string"; });
       }
     } catch(e){}
   }
@@ -742,7 +748,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (result !== null) out += '<span class="eqs"> =</span>';
     return out;
   }
-  // अक्षर तब तक छोटे होते हैं जब तक पढ़ने लायक रहें; उसके बाद खिसकाकर देखें
   function fit(box, maxRem, minRem){
     var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     var size = maxRem * rem, min = minRem * rem;
@@ -782,7 +787,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     mainEl.scrollLeft = mainEl.scrollWidth;
     words.textContent = lang === "off" ? "" : wordsLine(v.value, DICT[lang]);
   }
-  $("expr").addEventListener("click", function(ev){     // हिसाब में कहीं भी छूकर कर्सर वहाँ ले जाना
+  $("expr").addEventListener("click", function(ev){
     var spans = $("exprIn").querySelectorAll(".ch"), idx = expr.length;
     for (var i = 0; i < spans.length; i++){
       var r = spans[i].getBoundingClientRect();
@@ -790,6 +795,49 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
     if (result !== null) result = null;
     cur = idx; err = ""; render(); saveState();
+    if (kbMode){ syncKbInput(); $("kbInput").focus(); }
+  });
+
+  // ===== फ़ोन कीबोर्ड और कैलकुलेटर कीपैड के बीच स्विच =====
+  function setKbMode(on){
+    kbMode = !!on;
+    $("appRoot").classList.toggle("kb-active", kbMode);
+    $("kbBtn").classList.toggle("on", kbMode);
+    $("kbBtn").setAttribute("aria-pressed", kbMode ? "true" : "false");
+    var inp = $("kbInput");
+    if (kbMode){
+      syncKbInput();
+      inp.focus();
+      try { inp.setSelectionRange(cur, cur); } catch(e){}
+    } else {
+      inp.blur();
+    }
+    render();
+  }
+  $("kbBtn").addEventListener("click", function(){ setKbMode(!kbMode); });
+  $("kbInput").addEventListener("input", function(){
+    var inp = $("kbInput");
+    var raw = String(inp.value || "")
+      .replace(/,/g, ".")
+      .replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–—]/g, "-")
+      .replace(/[०-९]/g, function(d){ return String(d.charCodeAt(0) - 0x0966); })
+      .replace(/[^0-9.+\-*\/%]/g, "");
+    if (raw.length > MAX_LEN) raw = raw.slice(0, MAX_LEN);
+    var pos = typeof inp.selectionStart === "number" ? inp.selectionStart : raw.length;
+    expr = raw;
+    cur = Math.max(0, Math.min(pos, expr.length));
+    result = null;
+    err = "";
+    if (inp.value !== expr){
+      inp.value = expr;
+      try { inp.setSelectionRange(cur, cur); } catch(e){}
+    }
+    render();
+    saveState();
+  });
+  $("kbInput").addEventListener("keydown", function(ev){
+    if (ev.key === "Enter"){ ev.preventDefault(); feedback("="); press("="); }
+    else if (ev.key === "Escape"){ ev.preventDefault(); setKbMode(false); }
   });
 
   // ===== 8. बोलना, कॉपी और पेस्ट =====
@@ -804,10 +852,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     u.onend = done; u.onerror = done;
     btn.classList.add("speaking");
     window.speechSynthesis.speak(u);
-    setTimeout(done, 15000);                              // किसी वजह से अंत की ख़बर न आए तो भी हिलना रुके
+    setTimeout(done, 15000);
   });
 
-  function copyText(text){                              // नए तरीके से, न चले तो पुराने तरीके से
+  function copyText(text){
     function legacy(){
       try {
         var ta = document.createElement("textarea");
@@ -822,11 +870,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     return Promise.resolve(legacy());
   }
   $("copyBtn").addEventListener("click", function(){
-    var v = currentView().value;                        // सादा संख्या (कॉमा/शब्द के बिना), जो कहीं भी पेस्ट हो सके
+    var v = currentView().value;
     copyText(v).then(function(ok){ toast(ok ? t("copied") + ": " + formatNum(splitNum(v)) : t("copyFail")); });
   });
 
-  function cleanPaste(text){                            // कॉपी की हुई चीज़ से सिर्फ़ संख्या/हिसाब निकालना
+  function cleanPaste(text){
     var s = String(text || "").replace(/\([^)]*\)/g, " ").replace(/[₹$€£,\s\u00a0]/g, "")
       .replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–—]/g, "-")
       .replace(/[०-९]/g, function(d){ return String(d.charCodeAt(0) - 0x0966); });
@@ -836,48 +884,84 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   function insertPaste(text){
     var s = cleanPaste(text);
     if (!s){ toast(t("notNum")); return; }
-    if (result !== null){ endSession(); expr = ""; cur = 0; result = null; }
+    if (result !== null){ expr = ""; cur = 0; result = null; }
+    if (cur === 0 || /[+\-*\/]$/.test(expr.slice(0, cur))){
+      s = s.replace(/^[+*\/]+/, "");
+    }
+    if (!s){ toast(t("notNum")); return; }
     if (expr.length + s.length > MAX_LEN){ toast(t("notNum")); return; }
-    err = ""; insertAt(s); render(); saveState(); toast(t("pasted"));
+    err = ""; insertAt(s); render(); saveState();
+    if (kbMode) syncKbInput();
+    toast(t("pasted"));
   }
   $("pasteBtn").addEventListener("click", function(){
     if (!navigator.clipboard || !navigator.clipboard.readText){ toast(t("pasteFail")); return; }
     navigator.clipboard.readText().then(insertPaste, function(){ toast(t("pasteFail")); });
   });
-  document.addEventListener("paste", function(ev){      // कीबोर्ड से Ctrl+V
-    if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) return;
+  document.addEventListener("paste", function(ev){
+    if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName) && ev.target.id !== "kbInput") return;
     if (document.querySelector(".overlay.open, .pdf-overlay.open")) return;
     ev.preventDefault();
     insertPaste(ev.clipboardData ? ev.clipboardData.getData("text") : "");
   });
 
-  // ===== 9. बिल वाला पन्ना =====
-  var bill = null, billTimer = null;
-    function nextId(){                                    // हर बिल की अपनी अलग पहचान (समय पर आधारित)
-    var now = Date.now();
-    var m = (typeof now === "number" && Number.isFinite(now)) ? Math.floor(now) : 1;
+  // ===== Android बैक बटन और पैनल प्रबंधन =====
+  function pushModalState(name){
+    try {
+      if (window.history && window.history.pushState){
+        window.history.pushState({shabdModal: name}, "");
+      }
+    } catch(e){}
+  }
+  function closeTopModal(fromPop){
+    if ($("pdfOverlay").classList.contains("open")){
+      $("pdfOverlay").classList.remove("open");
+      if (!fromPop) tryPopModal();
+      return true;
+    }
+    var open = document.querySelector(".overlay.open");
+    if (open){
+      open.classList.remove("open");
+      if (!fromPop) tryPopModal();
+      return true;
+    }
+    return false;
+  }
+  var ignoringPop = 0;
+  function tryPopModal(){
+    try {
+      if (window.history && window.history.state && window.history.state.shabdModal){
+        ignoringPop++;
+        window.history.back();
+      }
+    } catch(e){}
+  }
+  window.addEventListener("popstate", function(){
+    if (ignoringPop > 0){ ignoringPop--; return; }
+    if ($("pdfOverlay").classList.contains("open")){
+      $("pdfOverlay").classList.remove("open");
+      return;
+    }
+    var open = document.querySelector(".overlay.open");
+    if (open){
+      open.classList.remove("open");
+    }
+  });
 
+  // ===== 9. बिल वाला पन्ना =====
+  var bill = null;
+  function nextId(){
+    var m = Math.floor(Date.now());
     function scanList(arr){
-      if (!Array.isArray(arr)) return;
       for (var i = 0; i < arr.length; i++){
         var h = arr[i];
         if (!h || typeof h !== "object") continue;
-        if (typeof h.t === "number" && Number.isFinite(h.t) && h.t >= m){
-          m = Math.floor(h.t) + 1;
-        }
-        if (typeof h.id === "number" && Number.isFinite(h.id) && h.id >= m){
-          m = Math.floor(h.id) + 1;
-        }
+        if (typeof h.t === "number" && isFinite(h.t) && h.t >= m) m = Math.floor(h.t) + 1;
       }
     }
-
-    if (typeof calcRecords !== "undefined") scanList(calcRecords);
-    if (typeof billRecords !== "undefined") scanList(billRecords);
-
-    if (typeof nextId._last === "number" && Number.isFinite(nextId._last) && nextId._last >= m){
-      m = nextId._last + 1;
-    }
-
+    scanList(calcRecords);
+    scanList(billRecords);
+    if (typeof nextId._last === "number" && nextId._last >= m) m = nextId._last + 1;
     nextId._last = m;
     return m;
   }
@@ -887,21 +971,22 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (e && e !== "-"){
       try { items = parseTerms(e); } catch(ex){ toast(t(errKey(ex))); return; }
     }
-    bill = {id: null, openedAt: Date.now(), shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items, key: e, dirty: false};
+    bill = {id: null, openedAt: Date.now(), shop: lsGet(SHOPKEY) || "", seller: lsGet(SELLERKEY) || "", customer: "", items: items, dirty: false};
     showBill();
   }
   function openBillRecord(h){
-    bill = {id: h.t, openedAt: h.t, shop: h.shop || "", seller: h.seller || "", customer: h.customer || "", key: "", dirty: false,
+    bill = {id: h.t, openedAt: h.t, shop: h.shop || "", seller: h.seller || "", customer: h.customer || "", dirty: false,
             items: h.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: it.n || ""}; })};
     showBill();
   }
   function showBill(){
+    if (kbMode) setKbMode(false);
     $("billShop").value = bill.shop; $("billSeller").value = bill.seller; $("billCustomer").value = bill.customer;
     $("billDate").textContent = fmtWhen(bill.id || bill.openedAt);
     renderBill(); sheet("bill", true);
   }
   function cleanAmount(s){
-    s = String(s).replace(/[^0-9.]/g, "");
+    s = String(s).replace(/,/g, ".").replace(/[^0-9.]/g, "");
     var p = s.split(".");
     if (p.length > 2) s = p[0] + "." + p.slice(1).join("");
     return s.slice(0, 16);
@@ -956,39 +1041,38 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         updateTotals(); touchBill();
       });
       line.appendChild(sg); line.appendChild(amt); num.appendChild(line);
-      if (/[^0-9.]/.test(it.x)) num.appendChild(el("small", "", prettyExpr(it.x)));      // जैसे 32×12
+      if (/[^0-9.]/.test(it.x)) num.appendChild(el("small", "", prettyExpr(it.x)));
 
       var del = el("button", "bdel", "×"); del.type = "button"; del.setAttribute("aria-label", t("remove"));
-      del.addEventListener("click", function(){ bill.items.splice(i, 1); touchBill(); renderBill(); });     // लाइन कट गई
+      del.addEventListener("click", function(){ bill.items.splice(i, 1); touchBill(); renderBill(); });
 
       row.appendChild(left); row.appendChild(num); row.appendChild(del);
       box.appendChild(row);
     });
     updateTotals();
   }
-  // बिल अपने-आप सेव: बदलाव के आधा सेकंड बाद, एक ही बिल = एक ही एंट्री
-    function touchBill(){
+  function touchBill(){
     if (bill) bill.dirty = true;
   }
   function saveBillToHistory(){
     if (!bill || !Array.isArray(bill.items) || !bill.items.length) return;
-    var shop = ($("billShop") && $("billShop").value || "").trim();
-    var seller = ($("billSeller") && $("billSeller").value || "").trim();
-    var customer = ($("billCustomer") && $("billCustomer").value || "").trim();
+    var shop = ($("billShop").value || "").trim();
+    var seller = ($("billSeller").value || "").trim();
+    var customer = ($("billCustomer").value || "").trim();
     var items = bill.items.map(function(it){
       return {s: it.s === "-" ? "-" : "+", x: String(it.x || "0"), v: String(it.v || "0"), n: (it.n || "").trim()};
     });
     if (!shop && !seller && !customer && !items.some(function(it){ return it.n || parseFloat(it.v); })) return;
-    if (!bill.id) bill.id = typeof nextId === "function" ? nextId() : Date.now();
+    if (!bill.id) bill.id = nextId();
     var rec = {
       k: "bill", shop: shop, seller: seller, customer: customer, items: items,
       e: items.map(function(it, i){ return (i === 0 && it.s === "-" ? "-" : i ? it.s : "") + it.x; }).join(""),
       r: itemsTotal(items), t: bill.id
     };
-    window.billRecords = (Array.isArray(window.billRecords) ? window.billRecords : []).filter(function(h){ return h.t !== rec.t; });
+    billRecords = billRecords.filter(function(h){ return h.t !== rec.t; });
     billRecords.unshift(rec);
-    billRecords = billRecords.slice(0, typeof MAX_REC === "number" ? MAX_REC : 100);
-    if (typeof saveBillRecords === "function") saveBillRecords();
+    billRecords = billRecords.slice(0, MAX_REC);
+    saveBillRecords();
     lsSet(SHOPKEY, shop); lsSet(SELLERKEY, seller);
     bill.dirty = false;
   }
@@ -1001,11 +1085,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("billCloseBtn").addEventListener("click", closeBill);
 
   // ===== 10. PDF (बिना किसी बाहरी लाइब्रेरी के, इंटरनेट के बिना भी) =====
-  var PW = 1240, PH = 1754;                              // A4 पन्ना (150 dpi)
+  var PW = 1240, PH = 1754;
   var FONT = '"Noto Sans Devanagari","Mukta","Segoe UI",Roboto,system-ui,sans-serif';
   var FONT_SERIF = '"Noto Serif Devanagari","Noto Serif",Georgia,"Times New Roman",serif';
   var RED = "#b3261e", DKEY = "shabd_calc_pdfdesign";
-  // चार अलग-अलग डिज़ाइन: रंग, ऊपर की पट्टी, तालिका, कुल का डिब्बा और सजावट सब अलग
   var DESIGNS = [
     {hi: "क्लासिक", en: "Classic", head: "band", thead: "solid", total: "box", frame: false, serif: false, mark: "rgba(29,46,88,0.04)",
      c: {primary: "#1d2e58", accent: "#f0a82a", on: "#ffffff", ink: "#14213d", muted: "#667089", line: "#dfe5f0", zebra: "#f6f8fc", paper: "#ffffff", soft: "#eef2fa"}},
@@ -1020,7 +1103,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   if (!(pdfDesign >= 0 && pdfDesign < DESIGNS.length)) pdfDesign = 0;
   var pdfCanvases = [];
 
-  function rr(g, x, y, w, h, r){                         // गोल कोनों वाला डिब्बा
+  function rr(g, x, y, w, h, r){
     g.beginPath(); g.moveTo(x + r, y);
     g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
     g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
@@ -1031,11 +1114,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     g.fillStyle = color; g.fill();
   }
   function hline(g, x1, x2, y, color, w){ g.strokeStyle = color; g.lineWidth = w || 2; g.beginPath(); g.moveTo(x1, y); g.lineTo(x2, y); g.stroke(); }
-  function divider(g, cx, y, half, color){               // ——— • ◆ • ———
+  function divider(g, cx, y, half, color){
     hline(g, cx - half, cx - 30, y, color, 3); hline(g, cx + 30, cx + half, y, color, 3);
     diamond(g, cx, y, 11, color); dot(g, cx - 48, y, 4, color); dot(g, cx + 48, y, 4, color);
   }
-  function stripes(g, x0, y0, w, h, gap, color){         // तिरछी रेखाएँ, डिब्बे के भीतर ही
+  function stripes(g, x0, y0, w, h, gap, color){
     g.strokeStyle = color; g.lineWidth = 3;
     for (var k = -h; k < w; k += gap){
       var xa = x0 + k, ya = y0 + h, xb = x0 + k + h, yb = y0;
@@ -1045,7 +1128,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       g.beginPath(); g.moveTo(xa, ya); g.lineTo(xb, yb); g.stroke();
     }
   }
-  function frameBox(g, color){                           // दोहरा किनारा और कोनों पर हीरे
+  function frameBox(g, color){
     [[36, 5], [62, 2]].forEach(function(p){
       var d = p[0], t = p[1];
       g.fillStyle = color;
@@ -1073,7 +1156,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (line) lines.push(line);
     return lines;
   }
-  // अक्षरों के बीच खाली जगह (सिर्फ़ अंग्रेज़ी में; हिंदी में मात्राएँ टूटतीं, इसलिए वह सामान्य लिखी जाती है)
   function spaced(g, text, x, y, gap, align){
     if (/[\u0900-\u097F]/.test(text)){
       g.textAlign = align || "left"; g.fillText(text, x, y); g.textAlign = "left";
@@ -1086,7 +1168,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     for (i = 0; i < text.length; i++){ g.fillText(text.charAt(i), sx, y); sx += g.measureText(text.charAt(i)).width + gap; }
     return sx;
   }
-  // ऐप का नाम: पन्ने के नीचे सिर्फ़ एक जगह, सजे हुए रूप में
   function brand(g, x, y, C){
     rr(g, x, y - 38, 46, 46, 13); g.fillStyle = C.primary; g.fill();
     g.fillStyle = C.accent; g.font = "800 30px " + FONT; g.textAlign = "center"; g.fillText("B", x + 23, y - 6); g.textAlign = "left";
@@ -1111,7 +1192,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     var M = D.frame ? 112 : 80, W = PW - 2 * M, ROWH = 84, TOTALS_H = 190, wordLines = [];
     var FL = D.frame ? PH - 172 : PH - 112, LIMIT = FL - 34;
     var COL = {n: M + 26, item: M + 104, amt: PW - M - 30};
-    var title = info.shop || L.bill, pages = [], cur, y;
+    var title = info.shop || L.bill, pages = [], curPage, y;
 
     function newPage(){
       var cv = document.createElement("canvas"); cv.width = PW; cv.height = PH;
@@ -1125,12 +1206,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       g.textAlign = "right"; g.fillStyle = c1; g.font = "700 30px " + FONT; g.fillText(clip(g, wp.date, 440), x, y1);
       g.fillStyle = c2; g.font = "600 28px " + FONT; g.fillText(wp.time, x, y2); g.textAlign = "left";
     }
-    function pill(g, x, y, fill, color){
+    function pill(g, x, y0, fill, color){
       g.font = "700 24px " + FONT; var w = g.measureText(L.bill).width + 44;
-      rr(g, x, y - 34, w, 46, 23); g.fillStyle = fill; g.fill();
-      g.fillStyle = color; g.fillText(L.bill, x + 22, y - 2);
+      rr(g, x, y0 - 34, w, 46, 23); g.fillStyle = fill; g.fill();
+      g.fillStyle = color; g.fillText(L.bill, x + 22, y0 - 2);
     }
-    // --- पहले पन्ने का ऊपरी हिस्सा (चार तरह का) ---
     function headBand(g){
       g.fillStyle = C.primary; g.fillRect(0, 0, PW, 252);
       dot(g, PW - 70, -20, 250, "rgba(255,255,255,0.05)"); dot(g, PW - 70, -20, 190, "rgba(255,255,255,0.05)"); dot(g, PW - 70, -20, 130, "rgba(255,255,255,0.06)");
@@ -1170,7 +1250,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     function headFirst(g){
       return D.head === "band" ? headBand(g) : D.head === "stripe" ? headStripe(g) : D.head === "center" ? headCenter(g) : headMinimal(g);
     }
-    // --- आगे के पन्नों का छोटा ऊपरी हिस्सा ---
     function headMore(g){
       var cx = PW / 2;
       if (D.head === "center"){
@@ -1189,7 +1268,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       g.textAlign = "right"; g.font = "600 24px " + FONT; g.fillText(wp.date, PW - M, 72); g.textAlign = "left";
       return 118 + 40;
     }
-    // --- विक्रेता और ग्राहक के नाम के डिब्बे ---
     function cards(g, y0){
       var list = [];
       if (info.seller) list.push([L.seller, info.seller]);
@@ -1271,24 +1349,23 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       g.fillStyle = C.muted; g.font = "600 24px " + FONT; g.textAlign = "right"; g.fillText(n + " / " + all, PW - M, FL + 54); g.textAlign = "left";
     }
 
-    cur = newPage();
-    if (info.words){                                     // शब्दों की लाइनें पहले गिनना, ताकि कुल के लिए सही जगह छोड़ी जाए
-      cur.g.font = "600 30px " + FONT; wordLines = wrap(cur.g, info.words, W * 0.72).slice(0, 3);
+    curPage = newPage();
+    if (info.words){
+      curPage.g.font = "600 30px " + FONT; wordLines = wrap(curPage.g, info.words, W * 0.72).slice(0, 3);
       TOTALS_H = 282 + 42 * (wordLines.length - 1);
     }
-    y = headFirst(cur.g); y = cards(cur.g, y); y = tHead(cur.g, y);
+    y = headFirst(curPage.g); y = cards(curPage.g, y); y = tHead(curPage.g, y);
     info.items.forEach(function(it, i){
-      if (y + ROWH > LIMIT){ cur = newPage(); y = headMore(cur.g); y = tHead(cur.g, y); }
-      drawRow(cur.g, y, it, i); y += ROWH;
+      if (y + ROWH > LIMIT){ curPage = newPage(); y = headMore(curPage.g); y = tHead(curPage.g, y); }
+      drawRow(curPage.g, y, it, i); y += ROWH;
     });
     y += 38;
-    if (y + TOTALS_H > FL - 8){ cur = newPage(); y = headMore(cur.g); }
-    totals(cur.g, y);
+    if (y + TOTALS_H > FL - 8){ curPage = newPage(); y = headMore(curPage.g); }
+    totals(curPage.g, y);
     pages.forEach(function(p, i){ footer(p, i + 1, pages.length); });
     return pages.map(function(p){ return p.cv; });
   }
 
-  // PDF फ़ाइल हाथ से बनाना: हर पन्ना एक JPEG तस्वीर है (हिंदी अक्षर जैसे दिखते हैं वैसे ही रहते हैं)
   function strBytes(s){ var u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; }
   function buildPdf(jpegs){
     var chunks = [], offs = [], pos = 0;
@@ -1331,7 +1408,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     var who = ($("billCustomer").value || $("billShop").value || "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24);
     return "Bill_" + (who ? who + "_" : "") + d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "_" + p2(d.getHours()) + p2(d.getMinutes()) + ".pdf";
   }
-  function billText(){                                  // शेयर के लिए सादा लिखा रूप (WhatsApp आदि में)
+  function billText(){
     var info = billInfo(), L = I18N[uiLang].pdf, lines = [];
     lines.push("*" + (info.shop || L.bill) + "*");
     if (info.seller) lines.push(L.seller + ": " + info.seller);
@@ -1368,18 +1445,21 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
   function openPdfPreview(){
     if (!bill.items.length){ toast(t("noLines")); return; }
-    saveBillToHistory();
     showPages(); buildDesignChips();
     $("pdfTitle").textContent = $("billShop").value.trim() || (I18N[uiLang].pdf.bill + " • " + formatNum(splitNum(itemsTotal(bill.items))));
     $("pdfOverlay").classList.add("open");
+    pushModalState("pdf");
     var body = $("pdfOverlay").querySelector(".pdf-body"); if (body) body.scrollTop = 0;
   }
-  function closePdfPreview(){ $("pdfOverlay").classList.remove("open"); }
-
-    function downloadBill(){
-    if (typeof saveBillToHistory === "function") {
-      try { saveBillToHistory(); } catch (e) {}
+  function closePdfPreview(){
+    if ($("pdfOverlay").classList.contains("open")){
+      $("pdfOverlay").classList.remove("open");
+      tryPopModal();
     }
+  }
+
+  function downloadBill(){
+    saveBillToHistory();
     if (downloadBill._busy) return;
     downloadBill._busy = true;
     toast(t("preparing"));
@@ -1402,12 +1482,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
 
   function shareBill(){
-    if (typeof saveBillToHistory === "function") {
-      try { saveBillToHistory(); } catch (e) {}
-    }
-    var shopEl = $("billShop");
-    var fallbackTitle = (I18N && I18N[uiLang] && I18N[uiLang].pdf && I18N[uiLang].pdf.bill) || "Bill";
-    var title = (shopEl && shopEl.value ? shopEl.value.trim() : "") || fallbackTitle;
+    saveBillToHistory();
+    var fallbackTitle = I18N[uiLang].pdf.bill;
+    var title = ($("billShop").value || "").trim() || fallbackTitle;
     function textShare(){
       var text = billText();
       if (navigator.share) {
@@ -1422,9 +1499,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
     makePdfBlob().then(function(blob){
       var file = null;
-      try {
-        file = new File([blob], pdfFileName(), {type: "application/pdf"});
-      } catch (e) {}
+      try { file = new File([blob], pdfFileName(), {type: "application/pdf"}); } catch(e){}
       if (file && navigator.canShare && navigator.canShare({files: [file]})) {
         return navigator.share({files: [file], title: title}).catch(function(err){
           if (err && err.name === "AbortError") return;
@@ -1438,9 +1513,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
 
   function printBill(){
-    if (typeof saveBillToHistory === "function") {
-      try { saveBillToHistory(); } catch (e) {}
-    }
+    saveBillToHistory();
     var finished = false;
     var done = function(){
       if (finished) return;
@@ -1456,104 +1529,84 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   $("billPdfBtn").addEventListener("click", openPdfPreview);
   $("pdfCloseAction").addEventListener("click", closePdfPreview);
-    $("pdfDownloadAction").addEventListener("click", downloadBill);
+  $("pdfDownloadAction").addEventListener("click", downloadBill);
   $("pdfShareAction").addEventListener("click", shareBill);
   $("pdfPrintAction").addEventListener("click", printBill);
 
-  // ===== 11. हिस्ट्री (नया लॉजिक) =====
-var activeHistTab = (typeof activeHistTab === "string" && (activeHistTab === "calc" || activeHistTab === "bill"))
-  ? activeHistTab
-  : "calc";
+  // ===== 11. हिस्ट्री =====
+  var activeHistTab = "calc";
 
-function renderHistory(){
-  var isBill = activeHistTab === "bill";
-  var btnCalc = $("btnHistCalc");
-  var btnBill = $("btnHistBill");
+  function renderHistory(){
+    var isBill = activeHistTab === "bill";
+    var btnCalc = $("btnHistCalc");
+    var btnBill = $("btnHistBill");
 
-  if (btnCalc) {
-    btnCalc.style.background = !isBill ? "var(--eq)" : "var(--op)";
-    btnCalc.style.color = !isBill ? "var(--eq-text)" : "var(--op-text)";
-  }
-  if (btnBill) {
-    btnBill.style.background = isBill ? "var(--eq)" : "var(--op)";
-    btnBill.style.color = isBill ? "var(--eq-text)" : "var(--op-text)";
-  }
+    btnCalc.setAttribute("aria-selected", !isBill ? "true" : "false");
+    btnBill.setAttribute("aria-selected", isBill ? "true" : "false");
 
-  var list = $("list");
-  if (!list) return;
-  list.innerHTML = "";
+    var list = $("list");
+    list.innerHTML = "";
 
-  if (typeof storageOk !== "undefined" && !storageOk && typeof t === "function") {
-    list.appendChild(el("div", "empty", t("noStore")));
-  }
-
-  var srcList = isBill
-    ? (typeof billRecords !== "undefined" && Array.isArray(billRecords) ? billRecords : [])
-    : (typeof calcRecords !== "undefined" && Array.isArray(calcRecords) ? calcRecords : []);
-
-  if (!srcList.length) {
-    var emptyMsg = isBill
-      ? ((typeof t === "function" && t("noBillHist") !== "noBillHist") ? t("noBillHist") : "कोई बिल नहीं है।")
-      : (typeof t === "function" ? t("noHist") : "कोई हिस्ट्री नहीं है।");
-    list.appendChild(el("div", "empty", emptyMsg));
-    return;
-  }
-
-  srcList.forEach(function(h){
-    if (!h || typeof h !== "object") return;
-    var b = el("button", "item");
-    b.type = "button";
-
-    if (isBill) {
-      var fallbackTag = typeof t === "function" ? t("billTag") : "Bill";
-      var head = el("div", "ttl");
-      var who = h.customer || h.shop || h.seller || fallbackTag;
-      head.appendChild(el("span", "", String(who)));
-      head.appendChild(el("span", "tag", String(fallbackTag)));
-      b.appendChild(head);
-
-      var sub = [h.shop, h.seller].filter(function(x){ return x && x !== who; }).join(" · ");
-      if (sub) b.appendChild(el("small", "", String(sub)));
-
-      var itemsArr = Array.isArray(h.items) ? h.items : [];
-      var linesLabel = typeof t === "function" ? t("lines") : "lines";
-      b.appendChild(el("small", "", itemsArr.length + " " + linesLabel));
-
-      var billVal = h.r !== undefined && h.r !== null ? h.r : (h.total !== undefined ? h.total : 0);
-      b.appendChild(el("b", "", formatNum(splitNum(billVal))));
-
-      b.addEventListener("click", function(){
-        if (typeof sheet === "function") sheet("hist", false);
-        if (typeof openBillRecord === "function") openBillRecord(h);
-      });
-    } else {
-      if (h.name) b.appendChild(el("div", "ttl", String(h.name)));
-      var rawExpr = h.e !== undefined && h.e !== null ? String(h.e) : "";
-      b.appendChild(el("small", "", prettyExpr(rawExpr) + " ="));
-
-      var calcVal = h.r !== undefined && h.r !== null ? String(h.r) : "";
-      b.appendChild(el("b", "", formatNum(splitNum(calcVal))));
-
-      b.addEventListener("click", function(){
-        if (typeof endSession === "function") endSession();
-        if (typeof trail !== "undefined") trail = [];
-        expr = calcVal;
-        cur = expr.length;
-        result = null;
-        err = "";
-        if (typeof sheet === "function") sheet("hist", false);
-        if (typeof render === "function") render();
-        if (typeof saveState === "function") saveState();
-      });
+    if (!storageOk) {
+      list.appendChild(el("div", "empty", t("noStore")));
     }
 
-    if (h.t && typeof fmtWhen === "function") {
-      b.appendChild(el("small", "", fmtWhen(h.t)));
+    var srcList = isBill ? billRecords : calcRecords;
+    if (!srcList.length) {
+      list.appendChild(el("div", "empty", isBill ? t("noBillHist") : t("noHist")));
+      return;
     }
-    list.appendChild(b);
-  });
-}
 
+    srcList.forEach(function(h){
+      if (!h || typeof h !== "object") return;
+      var b = el("button", "item");
+      b.type = "button";
+
+      if (isBill) {
+        var fallbackTag = t("billTag");
+        var head = el("div", "ttl");
+        var who = h.customer || h.shop || h.seller || fallbackTag;
+        head.appendChild(el("span", "", String(who)));
+        head.appendChild(el("span", "tag", String(fallbackTag)));
+        b.appendChild(head);
+
+        var sub = [h.shop, h.seller].filter(function(x){ return x && x !== who; }).join(" · ");
+        if (sub) b.appendChild(el("small", "", String(sub)));
+
+        var itemsArr = Array.isArray(h.items) ? h.items : [];
+        b.appendChild(el("small", "", itemsArr.length + " " + t("lines")));
+
+        var billVal = (h.r !== undefined && h.r !== null) ? h.r : 0;
+        b.appendChild(el("b", "", formatNum(splitNum(billVal))));
+
+        b.addEventListener("click", function(){
+          sheet("hist", false);
+          openBillRecord(h);
+        });
+      } else {
+        if (h.name) b.appendChild(el("div", "ttl", String(h.name)));
+        var rawExpr = (h.e !== undefined && h.e !== null) ? String(h.e) : "";
+        b.appendChild(el("small", "", prettyExpr(rawExpr) + " ="));
+
+        var calcVal = (h.r !== undefined && h.r !== null) ? String(h.r) : "";
+        b.appendChild(el("b", "", formatNum(splitNum(calcVal))));
+
+        b.addEventListener("click", function(){
+          expr = calcVal;
+          cur = expr.length;
+          result = null;
+          err = "";
+          sheet("hist", false);
+          render();
+          saveState();
+          if (kbMode) syncKbInput();
+        });
+      }
+
+      if (h.t) b.appendChild(el("small", "", fmtWhen(h.t)));
+      list.appendChild(b);
+    });
+  }
 
   // ===== 12. थीम, आवाज़ और सेटिंग्स =====
   function svg(inner){
@@ -1589,13 +1642,19 @@ function renderHistory(){
       o.start(now); o.stop(now + 0.07);
     } catch(e){}
   }
-  function feedback(k){                                 // आवाज़ और हल्का कंपन, दोनों एक ही स्विच से
+  function feedback(k){
     if (!soundOn) return;
     try { if (navigator.vibrate) navigator.vibrate(8); } catch(e){}
     beep(k);
   }
 
-  function sheet(id, open){ $(id).classList.toggle("open", open); }
+  function sheet(id, open){
+    var elSheet = $(id);
+    var wasOpen = elSheet.classList.contains("open");
+    elSheet.classList.toggle("open", open);
+    if (open && !wasOpen) pushModalState(id);
+    else if (!open && wasOpen) tryPopModal();
+  }
   function mark(id, attr, isOn){
     Array.prototype.forEach.call($(id).children, function(b){ b.classList.toggle("on", isOn(b.getAttribute(attr))); });
   }
@@ -1619,79 +1678,46 @@ function renderHistory(){
   onPick("optLang", "data-l", setLang);
   onPick("optSound", "data-s", function(v){ setSound(v === "on"); });
   on("themeBtn", function(){ setTheme(isDark() ? "light" : "dark"); });
-  on("gearBtn", function(){ syncOpts(); sheet("settings", true); });
+  on("gearBtn", function(){ if (kbMode) setKbMode(false); syncOpts(); sheet("settings", true); });
   on("openHist", function(){ sheet("settings", false); renderHistory(); sheet("hist", true); });
   on("setClose", function(){ sheet("settings", false); });
   on("histClose", function(){ sheet("hist", false); });
-    // नए हिस्ट्री टैब्स के लिए इवेंट्स
+
   function switchHistTab(tabName){
     if (tabName !== "calc" && tabName !== "bill") return;
-    if (typeof activeHistTab !== "undefined") {
-      activeHistTab = tabName;
-    }
-    if (typeof renderHistory === "function") {
-      renderHistory();
-    }
+    activeHistTab = tabName;
+    renderHistory();
   }
-
   on("btnHistCalc", function(){ switchHistTab("calc"); });
   on("btnHistBill", function(){ switchHistTab("bill"); });
 
-  // हिस्ट्री साफ करने का नया लॉजिक (सिर्फ खुले हुए टैब को साफ करेगा)
   var clearingHistory = false;
   on("histClear", function(){
     if (clearingHistory) return;
     clearingHistory = true;
-
     try {
-      var isCalc = (typeof activeHistTab === "string") ? (activeHistTab === "calc") : true;
-      var msg = isCalc
-        ? "क्या आप कैलकुलेशन हिस्ट्री को साफ करना चाहते हैं?"
-        : "क्या आप बिल हिस्ट्री को साफ करना चाहते हैं?";
-
-      if (typeof confirm === "function" && !confirm(msg)) {
-        return;
-      }
-
-      if (isCalc) {
-        if (typeof calcRecords !== "undefined") {
-          calcRecords = [];
-        }
-        if (typeof saveCalcRecords === "function") {
-          saveCalcRecords();
-        } else if (typeof saveState === "function") {
-          saveState();
-        }
-      } else {
-        if (typeof billRecords !== "undefined") {
-          billRecords = [];
-        }
-        if (typeof saveBillRecords === "function") {
-          saveBillRecords();
-        } else if (typeof saveState === "function") {
-          saveState();
-        }
-      }
-
-      if (typeof renderHistory === "function") {
-        renderHistory();
-      }
+      var isCalc = activeHistTab === "calc";
+      var msg = t(isCalc ? "confirmClearCalc" : "confirmClearBill");
+      if (typeof confirm === "function" && !confirm(msg)) return;
+      if (isCalc) { calcRecords = []; saveCalcRecords(); }
+      else { billRecords = []; saveBillRecords(); }
+      renderHistory();
     } finally {
       clearingHistory = false;
     }
   });
-      
+
   on("settings", function(ev){ if (ev.target === $("settings")) sheet("settings", false); });
   on("hist", function(ev){ if (ev.target === $("hist")) sheet("hist", false); });
   on("bill", function(ev){ if (ev.target === $("bill")) closeBill(); });
 
-  // कीबोर्ड (नाम लिखने वाले डिब्बों में नहीं चलता)
   document.addEventListener("keydown", function(ev){
     if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.defaultPrevented) return;
     var pdfOpen = $("pdfOverlay").classList.contains("open"), open = document.querySelector(".overlay.open");
     if (ev.key === "Escape"){
-      if (pdfOpen) closePdfPreview(); else if (open){ if (open.id === "bill") closeBill(); else open.classList.remove("open"); }
-      ev.preventDefault(); return;
+      if (pdfOpen || open){ closeTopModal(false); ev.preventDefault(); return; }
+      if (kbMode){ setKbMode(false); ev.preventDefault(); return; }
+      return;
     }
     if (pdfOpen || open || (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName))) return;
     if (ev.target && ev.target.tagName === "BUTTON" && (ev.key === "Enter" || ev.key === " ")) return;
@@ -1709,43 +1735,7 @@ function renderHistory(){
   applyTheme();
   applyUi();
   render();
-
-    // ===== STEP 9: सिर्फ कैलकुलेटर की स्थिति सेव रखना (Advance & Safe) =====
-  (function(){
-    var lastSnapshotTime = 0;
-
-    function syncCalcState(){
-      var now = Date.now();
-      // 300ms के अंदर दोबारा ट्रिगर हो तो डुप्लिकेट सेव रोकेगा
-      if (now - lastSnapshotTime < 300) return;
-      lastSnapshotTime = now;
-
-      try {
-        if (typeof saveState === "function") {
-          saveState();
-        }
-      } catch (err) {}
-    }
-
-    function handleVisibilityChange(){
-      if (typeof document !== "undefined" && document.hidden) {
-        syncCalcState();
-      }
-    }
-
-    function handlePageHide(){
-      syncCalcState();
-    }
-
-    if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-    }
-
-    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-      window.addEventListener("pagehide", handlePageHide);
-    }
-  })();
-  })();
+})();
 </script>
 <script>
 if ("serviceWorker" in navigator) {
@@ -1754,3 +1744,4 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
+```
