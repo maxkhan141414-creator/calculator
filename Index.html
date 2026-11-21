@@ -1710,6 +1710,43 @@ function renderHistory(){
   applyUi();
   render();
 })();
+
+    // ===== STEP 9: सिर्फ कैलकुलेटर की स्थिति सेव रखना (Advance & Safe) =====
+  (function(){
+    var lastSnapshotTime = 0;
+
+    function syncCalcState(){
+      var now = Date.now();
+      // 300ms के अंदर दोबारा ट्रिगर हो तो डुप्लिकेट सेव रोकेगा
+      if (now - lastSnapshotTime < 300) return;
+      lastSnapshotTime = now;
+
+      try {
+        if (typeof saveState === "function") {
+          saveState();
+        }
+      } catch (err) {}
+    }
+
+    function handleVisibilityChange(){
+      if (typeof document !== "undefined" && document.hidden) {
+        syncCalcState();
+      }
+    }
+
+    function handlePageHide(){
+      syncCalcState();
+    }
+
+    if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("pagehide", handlePageHide);
+    }
+  })();
+  
 </script>
 <script>
 if ("serviceWorker" in navigator) {
