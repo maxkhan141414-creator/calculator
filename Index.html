@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -129,8 +128,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .wide{width:100%}
 .empty{color:var(--panel-sub);text-align:center;padding:16px 0}
 
-/* लाल रंग का रजिस्ट्रेशन टेक्स्ट (बिना बटन के आकार के) */
+/* लाल रंग का रजिस्ट्रेशन / प्रोफ़ाइल अपडेट टेक्स्ट (भाषा बॉक्स के ठीक ऊपर) */
 .reg-link{align-self:flex-start;background:transparent;border:0;padding:2px 2px;margin:0;color:var(--clear-text);font:inherit;font-size:1rem;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.reg-link.update-mode{color:var(--opc)}
+.reg-phones{display:flex;flex-direction:column;gap:8px}
+.reg-phone-row{display:flex;gap:8px;align-items:center}
+.add-phone-btn{align-self:flex-start;border:1px dashed var(--panel-line);background:var(--p1);color:var(--panel-text);border-radius:10px;padding:8px 12px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer}
 
 /* ===== हिस्ट्री ===== */
 .hist-tabs{display:flex;gap:8px;margin:2px 0 4px}
@@ -283,7 +286,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 <div class="overlay" id="settings">
   <div class="sheet" role="dialog" data-ia="settings">
     <h2 data-i="settings"></h2>
-    <button type="button" class="reg-link" id="regLink" data-i="regNow"></button>
+    <button type="button" class="reg-link" id="regLink"></button>
     <div class="group">
       <div class="label" data-i="langLabel"></div>
       <div class="opts" id="optLang">
@@ -300,7 +303,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       </div>
     </div>
     <button type="button" class="wide" id="openHist" data-i="viewHist"></button>
-    <button type="button" class="wide" id="editRegBtn" data-i="updateReg" style="display:none"></button>
     <div class="actions">
       <button type="button" id="exportBtn" data-i="backupExport"></button>
       <button type="button" id="importBtn" data-i="backupImport"></button>
@@ -316,7 +318,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     <h2 data-i="regTitle"></h2>
     <input class="fld" id="regShop" type="text" maxlength="50" autocomplete="off" data-ph="shopPh">
     <input class="fld" id="regSeller" type="text" maxlength="40" autocomplete="off" data-ph="sellerPh">
-    <input class="fld" id="regPhone" type="tel" maxlength="20" autocomplete="off" data-ph="sellerPhonePh">
+    <div class="reg-phones" id="regPhonesList"></div>
+    <button type="button" class="add-phone-btn" id="regAddPhoneBtn" data-i="addMobile"></button>
     <div class="actions">
       <button type="button" id="regSaveBtn" class="on" style="background:var(--eq);color:var(--eq-text)" data-i="saveBtn"></button>
       <button type="button" id="regCloseBtn" data-i="close"></button>
@@ -358,7 +361,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     <input class="fld" id="billShop" type="text" maxlength="50" autocomplete="off" data-ph="shopPh">
     <div class="frow">
       <input class="fld" id="billSeller" type="text" maxlength="40" autocomplete="off" data-ph="sellerPh">
-      <input class="fld" id="billSellerPhone" type="tel" maxlength="20" autocomplete="off" data-ph="sellerPhonePh">
+      <input class="fld" id="billSellerPhone" type="text" maxlength="60" autocomplete="off" data-ph="sellerPhonePh">
     </div>
     <div class="frow">
       <input class="fld" id="billCustomer" type="text" maxlength="40" autocomplete="off" data-ph="customerPh">
@@ -450,7 +453,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     value = String(value);
     var neg = value.charAt(0) === "-", abs = neg ? value.slice(1) : value, dot = abs.indexOf(".");
     var whole = dot === -1 ? abs : abs.slice(0, dot);
-    return {neg: neg, whole: whole === "" ? "0" : whole.replace(/^0+(?=\d)/, ""), frac: dot === -1 ? "" : abs.slice(dot + 1), dot: dot !== -1};
+    whole = whole === "" ? "0" : whole.replace(/^0+(?=\d)/, "");
+    var frac = dot === -1 ? "" : abs.slice(dot + 1);
+    if (neg && whole === "0" && (!frac || /^0+$/.test(frac))) neg = false;
+    return {neg: neg, whole: whole, frac: frac, dot: dot !== -1};
   }
   function formatNum(n){ return (n.neg ? "−" : "") + indianComma(n.whole) + (n.dot ? "." + n.frac : ""); }
   function prettyExpr(e){
@@ -470,6 +476,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     function factor(){
       var t = tokens[i++];
       if (t === "-") return -factor();
+      if (t === "+") return factor();
       if (!isNum(t)) throw new Error("bad");
       var v = parseFloat(t);
       while (tokens[i] === "%"){ v /= 100; i++; }
@@ -515,14 +522,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       var short = trimZeros(parseFloat(s).toFixed(10));
       if (short !== "0" && short !== "-0") s = short;
     }
-    return s === "-0" ? "0" : s;
+    return (s === "-0" || s === "-0.0") ? "0" : s;
   }
   function errKey(ex){ return ex && ex.message === "div0" ? "eDiv" : (ex && ex.message === "big" ? "eBig" : "eBad"); }
   function trimOps(e){ return e.replace(/[+\-*\/]+$/, ""); }
 
   function parseTerms(e){
     var raw = [], sign = "+", start = 0, c = 0;
-    if (e.charAt(0) === "-"){ sign = "-"; start = 1; }
+    if (e.charAt(0) === "-" || e.charAt(0) === "+"){ sign = e.charAt(0); start = 1; }
     c = start;
     for (var i = start; i <= e.length; i++){
       var ch = e.charAt(i);
@@ -549,7 +556,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   // ===== 4. स्टोरेज (localStorage + IndexedDB) और सेटिंग =====
   var CKEY = "shabd_calc_calc_hist_v4", BKEY = "shabd_calc_bill_hist_v4", STKEY = "shabd_calc_state", LKEY = "shabd_calc_lang", UKEY = "shabd_calc_ui",
       TKEY = "shabd_calc_theme", SKEY = "shabd_calc_sound", REGKEY = "shabd_calc_reg_v1", WARNKEY = "shabd_calc_warn_at",
-      SHOPKEY = "shabd_calc_shop", SELLERKEY = "shabd_calc_seller", PHONEKEY = "shabd_calc_seller_phone", DKEY = "shabd_calc_pdfdesign";
+      SHOPKEY = "shabd_calc_shop", SELLERKEY = "shabd_calc_seller", PHONEKEY = "shabd_calc_seller_phone", DKEY = "shabd_calc_pdfdesign", BSEEDKEY = "shabd_calc_bill_seed";
 
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
@@ -571,7 +578,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   function saveCalcRecords(){ lsSet(CKEY, JSON.stringify(calcRecords.slice(0, MAX_REC))); }
 
-  // IndexedDB बिल हिस्ट्री के लिए (कोई ऑटो-डिलीट नहीं)
   var idb = null;
   function openBillsDb(){
     return new Promise(function(resolve){
@@ -628,7 +634,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   var regProfile = null;
   try {
     var rp = JSON.parse(lsGet(REGKEY) || "null");
-    if (rp && typeof rp === "object" && (rp.shop || rp.seller || rp.phone)) regProfile = rp;
+    if (rp && typeof rp === "object"){
+      var phones = Array.isArray(rp.phones) ? rp.phones.filter(Boolean).slice(0, 3) : (rp.phone ? [rp.phone] : []);
+      if (rp.shop || rp.seller || phones.length){
+        regProfile = {shop: rp.shop || "", seller: rp.seller || "", phones: phones};
+      }
+    }
   } catch(e){}
 
   var lang = lsGet(LKEY);
@@ -646,7 +657,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     hi: {title:"बिलिंग कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", kbSwitch:"फ़ोन कीबोर्ड बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
          billBtn:"बिल बनाएँ", speakBtn:"बोलकर सुनें", copyBtn:"कॉपी करें",
          regNow:"रजिस्ट्रेशन करें", updateReg:"प्रोफ़ाइल बदलें", regTitle:"दुकान रजिस्ट्रेशन", regSaved:"रजिस्ट्रेशन सेव हो गया",
-         saveBtn:"सेव करें", backupExport:"बैकअप सेव", backupImport:"बैकअप लोड",
+         addMobile:"+ मोबाइल नंबर जोड़ें", saveBtn:"सेव करें", backupExport:"बैकअप सेव", backupImport:"बैकअप लोड",
          backupDone:"बैकअप डाउनलोड हो गया", restoreDone:"बैकअप वापस लोड हो गया", restoreFail:"सही बैकअप फ़ाइल नहीं है",
          langLabel:"भाषा (शब्द कैसे दिखें)", off:"बंद करें", soundLabel:"बटन की आवाज़", soundOn:"चालू", soundOff:"बंद",
          viewHist:"हिस्ट्री देखें", close:"बंद करें", histTitle:"पिछले हिसाब", clearHist:"हिस्ट्री साफ़ करें",
@@ -672,7 +683,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     en: {title:"Billing Calculator", settings:"Settings", theme:"Switch theme", kbSwitch:"Switch phone keyboard", history:"History", erase:"Erase",
          billBtn:"Make a bill", speakBtn:"Listen", copyBtn:"Copy",
          regNow:"Registration Now", updateReg:"Update Registration", regTitle:"Shop Registration", regSaved:"Registration saved",
-         saveBtn:"Save", backupExport:"Save Backup", backupImport:"Load Backup",
+         addMobile:"+ Add Mobile Number", saveBtn:"Save", backupExport:"Save Backup", backupImport:"Load Backup",
          backupDone:"Backup downloaded", restoreDone:"Backup restored", restoreFail:"Invalid backup file",
          langLabel:"Language (how words appear)", off:"Off", soundLabel:"Button sound", soundOn:"On", soundOff:"Off",
          viewHist:"View history", close:"Close", histTitle:"Past calculations", clearHist:"Clear history",
@@ -707,9 +718,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     updateRegUi();
   }
   function updateRegUi(){
-    var hasReg = !!(regProfile && (regProfile.shop || regProfile.seller || regProfile.phone));
-    $("regLink").style.display = hasReg ? "none" : "inline-block";
-    $("editRegBtn").style.display = hasReg ? "block" : "none";
+    var hasReg = !!(regProfile && (regProfile.shop || regProfile.seller || (regProfile.phones && regProfile.phones.length)));
+    var rl = $("regLink");
+    rl.textContent = t(hasReg ? "updateReg" : "regNow");
+    rl.classList.toggle("update-mode", hasReg);
   }
 
   var DAYS = {
@@ -781,7 +793,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     var exprStr = (e === null || e === undefined) ? "" : String(e).trim();
     var resStr = (r === null || r === undefined) ? "" : String(r).trim();
 
-    if (!exprStr || exprStr === "-" || !resStr) return;
+    if (!exprStr || exprStr === "-" || exprStr === "+" || !resStr) return;
     if (resStr === "NaN" || resStr === "Infinity" || resStr === "-Infinity") return;
     if (/^[+-]?\d+(?:\.\d+)?$/.test(exprStr)) return;
 
@@ -791,8 +803,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
 
   function toggleSign(){
-    var nb = numAround(cur), s = nb[0];
-    if (s === nb[1]){ if (expr === ""){ expr = "-"; cur = 1; } return; }
+    var nb = numAround(cur), s = nb[0], tok = expr.slice(nb[0], nb[1]);
+    if (s === nb[1]){
+      if (expr === ""){ expr = "-"; cur = 1; }
+      return;
+    }
+    if (parseFloat(tok) === 0) return; // 0 पर −0 न बने
     var before = expr.slice(0, s), p = before.charAt(before.length - 1), pp = before.charAt(before.length - 2);
     if (p === "+") expr = before.slice(0, -1) + "-" + expr.slice(s);
     else if (p === "-"){
@@ -830,14 +846,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       if (result !== null) continueFromResult();
       var prev = expr.charAt(cur - 1);
       if (cur === 0){
-        if (k === "-") insertAt("-");
+        if (k === "-" || k === "+") insertAt(k);
         else insertAt("0" + k);
       } else if (/[+\-*\/]/.test(prev)){
         if (k === "-" && (prev === "*" || prev === "/")) insertAt("-");
         else {
           var s = cur;
           while (s > 0 && /[+\-*\/]/.test(expr.charAt(s - 1))) s--;
-          var rep = (s === 0 && k !== "-") ? ("0" + k) : k;
+          var rep = (s === 0 && k !== "-" && k !== "+") ? ("0" + k) : k;
           expr = expr.slice(0, s) + rep + expr.slice(cur); cur = s + rep.length;
         }
       } else insertAt(k);
@@ -846,14 +862,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       if (cur === 0) insertAt("0%");
       else if (/[0-9]/.test(expr.charAt(cur - 1))) insertAt("%");
     } else if (k === "+/-"){
-      if (result !== null) continueFromResult();
+      if (result !== null){
+        if (parseFloat(result) === 0) return;
+        continueFromResult();
+      }
       toggleSign();
     } else if (k === "B"){
       if (result !== null){ result = null; cur = expr.length; }
       if (cur > 0){ expr = expr.slice(0, cur - 1) + expr.slice(cur); cur--; }
     } else if (k === "C"){
       var cleanExpr = trimOps(expr);
-      if (cleanExpr && cleanExpr !== "-"){
+      if (cleanExpr && cleanExpr !== "-" && cleanExpr !== "+"){
         var valToSave = null;
         if (result !== null && result !== undefined && !err) {
           valToSave = String(result);
@@ -868,7 +887,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     } else if (k === "="){
       if (result !== null) return;
       var e = trimOps(expr);
-      if (!e || e === "-") return;
+      if (!e || e === "-" || e === "+") return;
       try {
         result = toPlain(evaluate(e));
         expr = e;
@@ -937,10 +956,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     else if (cr.right > br.right - 10) box.scrollLeft += cr.right - (br.right - 10);
   }
   function currentView(){
-    var key = trimOps(expr), body = key.replace(/^-/, "");
+    var key = trimOps(expr), body = key.replace(/^[+-]/, "");
     var hasOp = /[+\-*\/%]/.test(body), total = "";
     if (result !== null){ total = result; hasOp = true; }
-    else if (key && key !== "-"){ try { total = toPlain(evaluate(key)); } catch(ex){ total = ""; } }
+    else if (key && key !== "-" && key !== "+"){ try { total = toPlain(evaluate(key)); } catch(ex){ total = ""; } }
     return {total: total, hasOp: hasOp, value: total !== "" ? total : "0"};
   }
   function render(){
@@ -1097,6 +1116,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   // ===== 9. बिल वाला पन्ना और रजिस्ट्रेशन =====
   var bill = null, openedFromHistory = false;
+  var billSeed = parseInt(lsGet(BSEEDKEY) || "0", 10) || 0;
+
   function nextId(){
     var m = Math.floor(Date.now());
     function scanList(arr){
@@ -1115,28 +1136,18 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   function openBillFromExpr(){
     var e = result !== null ? expr : trimOps(expr), items = [];
-    if (e && e !== "-"){
+    if (e && e !== "-" && e !== "+"){
       try { items = parseTerms(e); } catch(ex){ toast(t(errKey(ex))); return; }
     }
     var defShop = (regProfile && regProfile.shop) || lsGet(SHOPKEY) || "";
     var defSeller = (regProfile && regProfile.seller) || lsGet(SELLERKEY) || "";
-    var defPhone = (regProfile && regProfile.phone) || lsGet(PHONEKEY) || "";
-    var nextDesign = (pdfDesign + 1) % DESIGNS.length;
-    pdfDesign = nextDesign; lsSet(DKEY, String(pdfDesign));
-    bill = {id: null, openedAt: Date.now(), shop: defShop, seller: defSeller, sellerPhone: defPhone, customer: "", customerPhone: "", items: items, design: pdfDesign, dirty: false};
+    var defPhone = (regProfile && regProfile.phones && regProfile.phones.length) ? regProfile.phones.join(", ") : (lsGet(PHONEKEY) || "");
+    pdfDesign = (pdfDesign + 1) % DESIGNS.length;
+    lsSet(DKEY, String(pdfDesign));
+    billSeed = (billSeed + 1) % 10000;
+    lsSet(BSEEDKEY, String(billSeed));
+    bill = {id: null, openedAt: Date.now(), shop: defShop, seller: defSeller, sellerPhone: defPhone, customer: "", customerPhone: "", items: items, design: pdfDesign, seed: billSeed, dirty: false};
     openedFromHistory = false;
-    showBill();
-  }
-  function openBillRecord(h){
-    bill = {
-      id: h.t, openedAt: h.t,
-      shop: h.shop || "", seller: h.seller || "", sellerPhone: h.sellerPhone || "",
-      customer: h.customer || "", customerPhone: h.customerPhone || "",
-      design: (typeof h.design === "number" && h.design >= 0 && h.design < DESIGNS.length) ? h.design : pdfDesign,
-      dirty: false,
-      items: h.items.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: it.n || ""}; })
-    };
-    pdfDesign = bill.design;
     showBill();
   }
   function showBill(){
@@ -1239,7 +1250,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       k: "bill",
       shop: bill.shop, seller: bill.seller, sellerPhone: bill.sellerPhone || "",
       customer: bill.customer, customerPhone: bill.customerPhone || "",
-      design: pdfDesign, items: items,
+      design: pdfDesign, seed: bill.seed || 0, items: items,
       e: items.map(function(it, i){ return (i === 0 && it.s === "-" ? "-" : i ? it.s : "") + it.x; }).join(""),
       r: itemsTotal(items), t: bill.id
     };
@@ -1259,33 +1270,33 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("billBtn").addEventListener("click", openBillFromExpr);
   $("billCloseBtn").addEventListener("click", closeBill);
 
-  // ===== 10. PDF: 10 अनोखे डिज़ाइन, हर पन्ने पर अलग बॉर्डर, लोगो और नोट ग्राफ़िक =====
+  // ===== 10. PDF: 10 बिल्कुल अलग लेआउट डिज़ाइन + हर पन्ने पर किनारे-से-किनारे कढ़ाई/डिजिटल बॉर्डर + लोगो + नोट =====
   var PW = 1240, PH = 1754;
   var FONT = '"Noto Sans Devanagari","Mukta","Segoe UI",Roboto,system-ui,sans-serif';
   var FONT_SERIF = '"Noto Serif Devanagari","Noto Serif",Georgia,"Times New Roman",serif';
   var RED = "#b3261e";
 
-  // 10 बिल्कुल अलग-अलग डिज़ाइन (रंग, हेडर, टेबल, टोटल बॉक्स और लोगो स्टाइल सब अलग)
+  // 10 पूरी तरह अलग बनावट वाले डिज़ाइन (हेडर, कार्ड, टेबल, टोटल, और लोगो की जगह सब अलग)
   var DESIGNS = [
-    {hi:"क्लासिक", en:"Classic", head:"band", thead:"solid", total:"box", logo:"badge", serif:false,
+    {hi:"क्लासिक", en:"Classic", head:"band", cards:"split", thead:"solid", rows:"zebra", total:"rightBox", logoPos:"left", logo:"badge", serif:false,
      c:{primary:"#1d2e58", accent:"#f0a82a", on:"#ffffff", ink:"#14213d", muted:"#667089", line:"#dfe5f0", zebra:"#f6f8fc", paper:"#ffffff", soft:"#eef2fa"}},
-    {hi:"रॉयल", en:"Royal", head:"center", thead:"double", total:"seal", logo:"crest", serif:true,
+    {hi:"रॉयल", en:"Royal", head:"center", cards:"doubleBox", thead:"double", rows:"clean", total:"centerSeal", logoPos:"center", logo:"crest", serif:true,
      c:{primary:"#6b1d2a", accent:"#c19a3b", on:"#fff8e7", ink:"#2b1b1e", muted:"#80696c", line:"#e8dbbd", zebra:"#fbf3df", paper:"#fffaf0", soft:"#f7ecd2"}},
-    {hi:"एमरल्ड", en:"Emerald", head:"stripe", thead:"pill", total:"card", logo:"ribbon", serif:false,
+    {hi:"एमरल्ड", en:"Emerald", head:"stripe", cards:"pills", thead:"pill", rows:"dots", total:"leftRight", logoPos:"left", logo:"ribbon", serif:false,
      c:{primary:"#0e6b50", accent:"#f2b632", on:"#ffffff", ink:"#0f2a21", muted:"#5b7a6d", line:"#d3e8de", zebra:"#f0f9f4", paper:"#ffffff", soft:"#e3f4ec"}},
-    {hi:"मिनिमल", en:"Minimal", head:"minimal", thead:"line", total:"plain", logo:"ink", serif:false,
+    {hi:"मिनिमल", en:"Minimal", head:"minimal", cards:"plain", thead:"line", rows:"hairline", total:"underline", logoPos:"right", logo:"ink", serif:false,
      c:{primary:"#111111", accent:"#b08a2e", on:"#ffffff", ink:"#111111", muted:"#6d6d6d", line:"#dcdcdc", zebra:"#fafafa", paper:"#ffffff", soft:"#f1f1f1"}},
-    {hi:"सनसेट", en:"Sunset", head:"diag", thead:"solid", total:"skew", logo:"glow", serif:false,
+    {hi:"सनसेट", en:"Sunset", head:"diag", cards:"stacked", thead:"solid", rows:"boxed", total:"skewLeft", logoPos:"left", logo:"glow", serif:false,
      c:{primary:"#b83b2a", accent:"#ff9f1c", on:"#ffffff", ink:"#2d1410", muted:"#7d5650", line:"#f2d7d2", zebra:"#fff5f2", paper:"#fffcfb", soft:"#fde9e4"}},
-    {hi:"इंडिगो", en:"Indigo", head:"side", thead:"grid", total:"split", logo:"tech", serif:false,
+    {hi:"इंडिगो", en:"Indigo", head:"side", cards:"topTag", thead:"grid", rows:"grid", total:"banner", logoPos:"right", logo:"tech", serif:false,
      c:{primary:"#2b2d83", accent:"#00b4d8", on:"#ffffff", ink:"#161842", muted:"#5e628f", line:"#d8dbf2", zebra:"#f4f5fc", paper:"#ffffff", soft:"#e8eaf9"}},
-    {hi:"केसरिया", en:"Saffron", head:"arch", thead:"double", total:"seal", logo:"gold", serif:true,
+    {hi:"केसरिया", en:"Saffron", head:"arch", cards:"doubleBox", thead:"double", rows:"zebra", total:"centerSeal", logoPos:"center", logo:"gold", serif:true,
      c:{primary:"#8c3b00", accent:"#f59e0b", on:"#fffbeb", ink:"#331a00", muted:"#826040", line:"#f3dec2", zebra:"#fef6e7", paper:"#fffdf7", soft:"#fdebd0"}},
-    {hi:"ओशन", en:"Ocean", head:"wave", thead:"pill", total:"card", logo:"wave", serif:false,
+    {hi:"ओशन", en:"Ocean", head:"wave", cards:"pills", thead:"pill", rows:"clean", total:"floatingCard", logoPos:"left", logo:"wave", serif:false,
      c:{primary:"#005f73", accent:"#0a9396", on:"#ffffff", ink:"#082a33", muted:"#4c727a", line:"#cde4e8", zebra:"#eff8fa", paper:"#ffffff", soft:"#dff2f5"}},
-    {hi:"स्लेट", en:"Slate", head:"ledger", thead:"grid", total:"plain", logo:"mono", serif:false,
+    {hi:"स्लेट", en:"Slate", head:"ledger", cards:"inlineBar", thead:"grid", rows:"grid", total:"underline", logoPos:"right", logo:"mono", serif:false,
      c:{primary:"#2b3440", accent:"#3b82f6", on:"#ffffff", ink:"#1e242c", muted:"#647080", line:"#d5dce5", zebra:"#f5f7fa", paper:"#ffffff", soft:"#e8edf3"}},
-    {hi:"उत्सव", en:"Festive", head:"ribbon", thead:"solid", total:"skew", logo:"festive", serif:true,
+    {hi:"उत्सव", en:"Festive", head:"ribbon", cards:"stacked", thead:"solid", rows:"dots", total:"banner", logoPos:"center", logo:"festive", serif:true,
      c:{primary:"#6a1b6d", accent:"#f4b400", on:"#ffffff", ink:"#2e0d30", muted:"#7a567d", line:"#ecd5ee", zebra:"#fbf2fc", paper:"#fffaff", soft:"#f6e3f8"}}
   ];
 
@@ -1362,146 +1373,131 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     return sx;
   }
 
-  // हर पन्ने के किनारों पर अलग-अलग बॉर्डर पैटर्न (फूल-पत्तियाँ, ज़िग-ज़ैग कट, डिजिटल, मेहराब, आदि)
-  function drawPageBorder(g, pageIdx, designIdx, C){
-    var pat = (pageIdx + designIdx) % 6;
+  // किनारे-से-किनारे पूरा बॉर्डर + बीच की खाली जगहों में हल्के सजावटी कढ़ाई/डिजिटल मोटिफ़
+  function drawFlowerMotif(g, cx, cy, scale, color, alpha){
     g.save();
+    g.translate(cx, cy);
+    g.scale(scale, scale);
+    g.globalAlpha = alpha;
+    for (var a = 0; a < 8; a++){
+      g.save(); g.rotate(a * Math.PI / 4);
+      g.beginPath(); g.ellipse(16, 0, 12, 5, 0, 0, Math.PI * 2);
+      g.fillStyle = color; g.fill();
+      g.restore();
+    }
+    dot(g, 0, 0, 6, color);
+    g.restore();
+  }
+  function drawPageDecor(g, pageIdx, seed, C){
+    var pat = (pageIdx + seed) % 6;
+    g.save();
+    // 1. पन्ने के बिल्कुल किनारे तक पूरा बॉर्डर
     if (pat === 0){
-      // फूल-पत्तियों वाला कोना बॉर्डर
-      g.strokeStyle = C.accent; g.lineWidth = 3;
-      g.strokeRect(24, 24, PW - 48, PH - 48);
-      [[42, 42, 1, 1], [PW - 42, 42, -1, 1], [42, PH - 42, 1, -1], [PW - 42, PH - 42, -1, -1]].forEach(function(c){
-        g.save(); g.translate(c[0], c[1]); g.scale(c[2], c[3]);
-        for (var a = 0; a < 5; a++){
-          g.save(); g.rotate(a * 0.35);
-          g.beginPath(); g.ellipse(18, 0, 14, 6, 0, 0, Math.PI * 2);
-          g.fillStyle = C.accent; g.globalAlpha = 0.65; g.fill();
-          g.restore();
-        }
-        dot(g, 0, 0, 7, C.primary);
-        g.restore();
-      });
+      // फूल-पत्तियों और लता वाला किनारा बॉर्डर
+      g.strokeStyle = C.accent; g.globalAlpha = 0.55; g.lineWidth = 3;
+      g.strokeRect(10, 10, PW - 20, PH - 20);
+      for (var x = 60; x < PW - 40; x += 120){ drawFlowerMotif(g, x, 14, 0.55, C.accent, 0.55); drawFlowerMotif(g, x, PH - 14, 0.55, C.accent, 0.55); }
+      for (var y = 80; y < PH - 60; y += 140){ drawFlowerMotif(g, 14, y, 0.55, C.primary, 0.35); drawFlowerMotif(g, PW - 14, y, 0.55, C.primary, 0.35); }
     } else if (pat === 1){
-      // ज़िग-ज़ैग कटावदार बॉर्डर
+      // कढ़ाई (Embroidery Scallop) पूरा किनारा
       g.strokeStyle = C.primary; g.globalAlpha = 0.25; g.lineWidth = 3;
-      g.beginPath();
-      for (var x = 20; x <= PW - 20; x += 28){ g.lineTo(x, (x / 28) % 2 === 0 ? 18 : 30); }
-      g.stroke();
-      g.beginPath();
-      for (var x2 = 20; x2 <= PW - 20; x2 += 28){ g.lineTo(x2, PH - ((x2 / 28) % 2 === 0 ? 18 : 30)); }
-      g.stroke();
+      for (var sx = 0; sx < PW; sx += 40){ g.beginPath(); g.arc(sx + 20, 4, 20, 0, Math.PI); g.stroke(); g.beginPath(); g.arc(sx + 20, PH - 4, 20, Math.PI, Math.PI * 2); g.stroke(); }
+      for (var sy = 0; sy < PH; sy += 40){ g.beginPath(); g.arc(4, sy + 20, 20, -Math.PI / 2, Math.PI / 2); g.stroke(); g.beginPath(); g.arc(PW - 4, sy + 20, 20, Math.PI / 2, 1.5 * Math.PI); g.stroke(); }
     } else if (pat === 2){
-      // डिजिटल / जियोमेट्रिक कोने
-      g.strokeStyle = C.accent; g.lineWidth = 4; g.globalAlpha = 0.5;
-      [[24, 24, 1, 1], [PW - 24, 24, -1, 1], [24, PH - 24, 1, -1], [PW - 24, PH - 24, -1, -1]].forEach(function(c){
-        g.save(); g.translate(c[0], c[1]); g.scale(c[2], c[3]);
-        g.beginPath(); g.moveTo(0, 70); g.lineTo(0, 0); g.lineTo(70, 0); g.stroke();
-        g.fillStyle = C.primary; g.fillRect(14, 14, 14, 14);
-        g.restore();
-      });
+      // ज़िग-ज़ैग कट किनारा
+      g.strokeStyle = C.accent; g.globalAlpha = 0.55; g.lineWidth = 3;
+      g.beginPath(); for (var zx = 0; zx <= PW; zx += 24) g.lineTo(zx, (zx / 24) % 2 === 0 ? 6 : 20); g.stroke();
+      g.beginPath(); for (var zx2 = 0; zx2 <= PW; zx2 += 24) g.lineTo(zx2, PH - ((zx2 / 24) % 2 === 0 ? 6 : 20)); g.stroke();
+      g.beginPath(); for (var zy = 0; zy <= PH; zy += 24) g.lineTo((zy / 24) % 2 === 0 ? 6 : 20, zy); g.stroke();
+      g.beginPath(); for (var zy2 = 0; zy2 <= PH; zy2 += 24) g.lineTo(PW - ((zy2 / 24) % 2 === 0 ? 6 : 20), zy2); g.stroke();
     } else if (pat === 3){
-      // शाही दोहरा बॉर्डर + हीरे
-      g.strokeStyle = C.accent; g.lineWidth = 4; g.strokeRect(26, 26, PW - 52, PH - 52);
-      g.strokeStyle = C.primary; g.lineWidth = 1.5; g.strokeRect(38, 38, PW - 76, PH - 76);
-      [[38, 38], [PW - 38, 38], [38, PH - 38], [PW - 38, PH - 38]].forEach(function(p){ diamond(g, p[0], p[1], 10, C.accent); });
+      // डिजिटल जियोमेट्रिक किनारा
+      g.strokeStyle = C.primary; g.globalAlpha = 0.25; g.lineWidth = 4; g.strokeRect(8, 8, PW - 16, PH - 16);
+      g.fillStyle = C.accent; g.globalAlpha = 0.45;
+      for (var dx = 20; dx < PW - 20; dx += 80){ g.fillRect(dx, 6, 22, 8); g.fillRect(dx, PH - 14, 22, 8); }
+      for (var dy = 20; dy < PH - 20; dy += 80){ g.fillRect(6, dy, 8, 22); g.fillRect(PW - 14, dy, 8, 22); }
     } else if (pat === 4){
-      // मोती-लड़ी बॉर्डर
-      g.fillStyle = C.primary; g.globalAlpha = 0.18;
-      for (var px = 36; px <= PW - 36; px += 34){ dot(g, px, 22, 4, C.primary); dot(g, px, PH - 22, 4, C.primary); }
-      for (var py = 56; py <= PH - 56; py += 34){ dot(g, 22, py, 4, C.accent); dot(g, PW - 22, py, 4, C.accent); }
+      // मोती-लड़ी पूरा किनारा
+      for (var px = 14; px <= PW - 14; px += 28){ dot(g, px, 12, 4, C.accent); dot(g, px, PH - 12, 4, C.accent); }
+      for (var py = 36; py <= PH - 36; py += 28){ dot(g, 12, py, 4, C.primary); dot(g, PW - 12, py, 4, C.primary); }
     } else {
-      // लहरदार किनारा
-      g.strokeStyle = C.accent; g.lineWidth = 3; g.globalAlpha = 0.35;
-      g.beginPath();
-      for (var wx = 24; wx <= PW - 24; wx += 20){ g.lineTo(wx, 24 + Math.sin(wx * 0.05) * 6); }
-      g.stroke();
-      g.beginPath();
-      for (var wx2 = 24; wx2 <= PW - 24; wx2 += 20){ g.lineTo(wx2, PH - 24 + Math.sin(wx2 * 0.05) * 6); }
-      g.stroke();
+      // दोहरी शाही लकीर किनारा
+      g.strokeStyle = C.accent; g.globalAlpha = 0.6; g.lineWidth = 4; g.strokeRect(8, 8, PW - 16, PH - 16);
+      g.strokeStyle = C.primary; g.globalAlpha = 0.25; g.lineWidth = 2; g.strokeRect(18, 18, PW - 36, PH - 36);
+    }
+
+    // 2. पन्ने की खाली जगहों में बीच-बीच में हल्के सजावटी मोटिफ़ (पूरे पन्ने पर नहीं, कहीं-कहीं)
+    if (pat % 2 === 0){
+      drawFlowerMotif(g, PW * 0.22, PH * 0.52, 2.6, C.accent, 0.055);
+      drawFlowerMotif(g, PW * 0.78, PH * 0.74, 2.2, C.primary, 0.045);
+    } else {
+      g.strokeStyle = C.primary; g.globalAlpha = 0.045; g.lineWidth = 3;
+      g.beginPath(); g.arc(PW * 0.2, PH * 0.65, 95, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.arc(PW * 0.2, PH * 0.65, 65, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = C.accent; g.globalAlpha = 0.06;
+      g.beginPath(); g.moveTo(PW * 0.76, PH * 0.45 - 60); g.lineTo(PW * 0.76 + 60, PH * 0.45);
+      g.lineTo(PW * 0.76, PH * 0.45 + 60); g.lineTo(PW * 0.76 - 60, PH * 0.45); g.closePath(); g.stroke();
     }
     g.restore();
   }
 
-  // लोगो आइकन + उसके ठीक नीचे स्टाइलिश तिरछा (tilted) "Billing Calculator" नाम (हर डिज़ाइन में अलग लुक)
-  function drawAppLogoAndTitle(g, x, y, D){
+  // लोगो आइकन + उसके ठीक नीचे स्टाइलिश तिरछा "Billing Calculator" नाम (अलग-अलग जगह और स्टाइल में)
+  function drawAppLogoAndTitle(g, cx, y, D){
     var C = D.c;
-    // 1. कैलकुलेटर + बिल रसीद वाला नया लोगो आइकन
+    // 1. कैलकुलेटर + बिल रसीद वाला लोगो
     g.save();
-    rr(g, x, y - 54, 48, 48, 12); g.fillStyle = C.primary; g.fill();
+    rr(g, cx - 24, y - 62, 48, 48, 12); g.fillStyle = C.primary; g.fill();
     g.strokeStyle = C.accent; g.lineWidth = 2; g.stroke();
-    // रसीद
-    rr(g, x + 13, y - 50, 22, 14, 3); g.fillStyle = "#ffffff"; g.fill();
-    // कैलकुलेटर बॉडी
-    rr(g, x + 9, y - 38, 30, 27, 5); g.fillStyle = "#eef2fa"; g.fill();
-    // गोल्डन '=' बटन
-    rr(g, x + 26, y - 24, 9, 10, 3); g.fillStyle = C.accent; g.fill();
-    // छोटे डॉट बटन
+    rr(g, cx - 11, y - 58, 22, 14, 3); g.fillStyle = "#ffffff"; g.fill();
+    rr(g, cx - 15, y - 46, 30, 27, 5); g.fillStyle = "#eef2fa"; g.fill();
+    rr(g, cx + 2, y - 32, 9, 10, 3); g.fillStyle = C.accent; g.fill();
     for (var r = 0; r < 2; r++){
-      for (var c = 0; c < 2; c++){
-        dot(g, x + 15 + c * 6, y - 28 + r * 7, 2.2, C.primary);
-      }
+      for (var c = 0; c < 2; c++) dot(g, cx - 9 + c * 6, y - 36 + r * 7, 2.2, C.primary);
     }
     g.restore();
 
-    // 2. आइकन के ठीक नीचे थोड़ा टेढ़ा (tilted) और स्टाइलिश "Billing Calculator" नाम (हर डिज़ाइन में अलग स्टाइल)
+    // 2. लोगो के ठीक नीचे थोड़ा टेढ़ा व स्टाइलिश "Billing Calculator" नाम
     g.save();
-    g.translate(x + 62, y - 22);
-    g.rotate(-0.045); // हल्का टेढ़ा स्टाइलिश झुकाव
+    g.translate(cx, y + 6);
+    g.rotate(-0.045);
     var label = "Billing Calculator";
+    g.textAlign = "center";
     if (D.logo === "ribbon" || D.logo === "festive"){
-      g.font = "italic 800 22px " + FONT_SERIF;
+      g.font = "italic 800 20px " + FONT_SERIF;
       var tw = g.measureText(label).width + 26;
-      rr(g, -8, -19, tw, 28, 14); g.fillStyle = C.primary; g.fill();
-      g.fillStyle = C.accent; g.fillText(label, 5, 2);
+      rr(g, -tw / 2, -18, tw, 26, 13); g.fillStyle = C.primary; g.fill();
+      g.fillStyle = C.accent; g.fillText(label, 0, 2);
     } else if (D.logo === "glow" || D.logo === "gold"){
-      g.font = "italic 800 24px " + FONT_SERIF;
+      g.font = "italic 800 22px " + FONT_SERIF;
       g.fillStyle = C.accent; g.fillText(label, 2, 2);
       g.fillStyle = C.primary; g.fillText(label, 0, 0);
-      g.fillStyle = C.accent; g.fillRect(0, 6, 175, 3);
     } else if (D.logo === "tech" || D.logo === "wave"){
-      g.font = "italic 800 22px " + FONT;
-      g.fillStyle = C.primary; g.fillText("BILLING", 0, 0);
-      var w1 = g.measureText("BILLING ").width;
-      g.fillStyle = C.accent; g.fillText("CALCULATOR", w1, 0);
-    } else if (D.logo === "crest"){
-      g.font = "italic 700 23px " + FONT_SERIF;
+      g.font = "italic 800 21px " + FONT;
       g.fillStyle = C.primary; g.fillText(label, 0, 0);
-      hline(g, 0, 185, 6, C.accent, 2);
-      hline(g, 0, 120, 10, C.primary, 1.5);
+      hline(g, -85, 85, 6, C.accent, 3);
     } else {
-      g.font = "italic 800 23px " + FONT;
+      g.font = "italic 800 21px " + FONT;
       g.fillStyle = "rgba(0,0,0,0.12)"; g.fillText(label, 2, 2);
       g.fillStyle = C.primary; g.fillText(label, 0, 0);
-      g.fillStyle = C.accent; g.fillRect(0, 5, 160, 3);
     }
+    g.textAlign = "left";
     g.restore();
   }
 
-  // सजावटी कलात्मक नोट-ग्राफ़िक (असली की हूबहू नकल नहीं, बल्कि रंग-बिरंगा नोट बैज)
   function drawDecorativeNote(g, x, y, val){
     var st = NOTES[val];
     if (!st) return;
     g.save();
     g.translate(x, y);
     g.rotate(-0.03);
-    // नोट कार्ड
-    rr(g, 0, 0, 290, 130, 14);
-    g.fillStyle = st.bg; g.fill();
+    rr(g, 0, 0, 280, 126, 14); g.fillStyle = st.bg; g.fill();
     g.strokeStyle = st.accent; g.lineWidth = 4; g.stroke();
-    // अंदर का सजावटी बॉर्डर
-    rr(g, 10, 10, 270, 110, 9);
-    g.strokeStyle = st.fg; g.globalAlpha = 0.45; g.lineWidth = 1.5; g.stroke();
+    rr(g, 10, 10, 260, 106, 9); g.strokeStyle = st.fg; g.globalAlpha = 0.45; g.lineWidth = 1.5; g.stroke();
     g.globalAlpha = 1;
-    // सजावटी गोले
-    dot(g, 225, 65, 38, "rgba(255,255,255,0.14)");
-    dot(g, 225, 65, 24, "rgba(255,255,255,0.12)");
-    // मूल्य ₹
-    g.fillStyle = st.fg;
-    g.font = "800 46px " + FONT;
-    g.fillText("₹" + val, 24, 72);
-    g.font = "700 16px " + FONT;
-    g.fillStyle = st.accent;
-    g.fillText("BILLING NOTE", 26, 102);
+    dot(g, 215, 63, 36, "rgba(255,255,255,0.14)");
+    dot(g, 215, 63, 22, "rgba(255,255,255,0.12)");
+    g.fillStyle = st.fg; g.font = "800 44px " + FONT; g.fillText("₹" + val, 22, 70);
+    g.font = "700 15px " + FONT; g.fillStyle = st.accent; g.fillText("BILLING NOTE", 24, 98);
     g.restore();
   }
 
@@ -1514,6 +1510,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       customer: (bill.customer || "").trim(),
       customerPhone: (bill.customerPhone || "").trim(),
       items: items, total: total, ts: bill.id || bill.openedAt || Date.now(),
+      seed: bill.seed || 0,
       words: lang === "off" ? "" : wordsLine(total, DICT[lang])
     };
   }
@@ -1521,8 +1518,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   function renderBillPages(){
     var D = DESIGNS[pdfDesign], C = D.c, HF = D.serif ? FONT_SERIF : FONT;
     var L = I18N[uiLang].pdf, info = billInfo(), wp = whenParts(info.ts);
-    var M = 84, W = PW - 2 * M, ROWH = 82, TOTALS_H = 210, wordLines = [];
-    var FL = PH - 130, LIMIT = FL - 34;
+    var M = 84, W = PW - 2 * M, ROWH = 82, TOTALS_H = 220, wordLines = [];
+    var FL = PH - 140, LIMIT = FL - 34;
     var COL = {n: M + 26, item: M + 104, amt: PW - M - 30};
     var title = info.shop || L.bill, pages = [], curPage, y;
 
@@ -1530,7 +1527,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       var cv = document.createElement("canvas"); cv.width = PW; cv.height = PH;
       var g = cv.getContext("2d"); g.fillStyle = C.paper; g.fillRect(0, 0, PW, PH);
       g.textBaseline = "alphabetic"; g.textAlign = "left";
-      drawPageBorder(g, idx, pdfDesign, C);
+      drawPageDecor(g, idx, info.seed, C);
       var p = {cv: cv, g: g}; pages.push(p); return p;
     }
     function dateRight(g, x, y1, y2, c1, c2){
@@ -1540,56 +1537,62 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     function headFirst(g){
       var h = D.head;
       if (h === "band" || h === "diag" || h === "ribbon"){
-        g.fillStyle = C.primary; g.fillRect(0, 0, PW, 236);
+        g.fillStyle = C.primary; g.fillRect(24, 24, PW - 48, 212);
         if (h === "diag"){
-          g.fillStyle = C.accent; g.beginPath(); g.moveTo(0, 236); g.lineTo(PW, 200); g.lineTo(PW, 244); g.lineTo(0, 244); g.closePath(); g.fill();
+          g.fillStyle = C.accent; g.beginPath(); g.moveTo(24, 236); g.lineTo(PW - 24, 198); g.lineTo(PW - 24, 244); g.lineTo(24, 244); g.closePath(); g.fill();
         } else if (h === "ribbon"){
-          stripes(g, 0, 0, PW, 236, 44, "rgba(255,255,255,0.07)");
-          g.fillStyle = C.accent; g.fillRect(0, 236, PW, 10);
+          stripes(g, 24, 24, PW - 48, 212, 44, "rgba(255,255,255,0.07)");
+          g.fillStyle = C.accent; g.fillRect(24, 236, PW - 48, 10);
         } else {
-          dot(g, PW - 70, -20, 230, "rgba(255,255,255,0.06)");
-          g.fillStyle = C.accent; g.fillRect(0, 236, PW, 8);
+          dot(g, PW - 90, 40, 170, "rgba(255,255,255,0.06)");
+          g.fillStyle = C.accent; g.fillRect(24, 236, PW - 48, 8);
         }
-        g.fillStyle = C.on; fitFont(g, title, 800, 58, 32, W - 430, HF); g.fillText(clip(g, title, W - 430), M, 126);
-        dateRight(g, PW - M, 106, 150, C.on, "rgba(255,255,255,0.85)");
-        return 280;
+        g.fillStyle = C.on; fitFont(g, title, 800, 56, 30, W - 430, HF); g.fillText(clip(g, title, W - 430), M, 128);
+        dateRight(g, PW - M, 110, 152, C.on, "rgba(255,255,255,0.85)");
+        return 276;
       }
       if (h === "stripe" || h === "wave"){
-        rr(g, M, 60, W, 200, h === "wave" ? 44 : 26); g.fillStyle = C.primary; g.fill();
-        stripes(g, M + 16, 76, W - 32, 168, 36, "rgba(255,255,255,0.08)");
-        g.fillStyle = C.on; fitFont(g, title, 800, 56, 32, W - 470, HF); g.fillText(clip(g, title, W - 470), M + 42, 154);
-        dateRight(g, PW - M - 42, 134, 178, C.on, "rgba(255,255,255,0.85)");
-        return 296;
+        rr(g, M, 56, W, 194, h === "wave" ? 48 : 24); g.fillStyle = C.primary; g.fill();
+        stripes(g, M + 16, 72, W - 32, 162, 36, "rgba(255,255,255,0.08)");
+        g.fillStyle = C.on; fitFont(g, title, 800, 54, 30, W - 470, HF); g.fillText(clip(g, title, W - 470), M + 42, 150);
+        dateRight(g, PW - M - 42, 132, 176, C.on, "rgba(255,255,255,0.85)");
+        return 286;
       }
       if (h === "center" || h === "arch"){
         var cx = PW / 2;
-        if (h === "arch"){ rr(g, M, 60, W, 240, 120); g.fillStyle = C.soft; g.fill(); g.strokeStyle = C.accent; g.lineWidth = 3; g.stroke(); }
-        else divider(g, cx, 110, 280, C.accent);
-        g.textAlign = "center"; g.fillStyle = C.primary; fitFont(g, title, 800, 62, 34, W - 80, HF);
-        g.fillText(clip(g, title, W - 80), cx, 196);
-        g.fillStyle = C.muted; g.font = "600 26px " + FONT;
-        g.fillText(wp.date + "  •  " + wp.time, cx, 250); g.textAlign = "left";
-        return 336;
+        if (h === "arch"){ rr(g, M, 56, W, 228, 114); g.fillStyle = C.soft; g.fill(); g.strokeStyle = C.accent; g.lineWidth = 3; g.stroke(); }
+        else divider(g, cx, 96, 280, C.accent);
+        g.textAlign = "center"; g.fillStyle = C.primary; fitFont(g, title, 800, 60, 32, W - 80, HF);
+        g.fillText(clip(g, title, W - 80), cx, 184);
+        g.fillStyle = C.muted; g.font = "600 25px " + FONT;
+        g.fillText(wp.date + "  •  " + wp.time, cx, 238); g.textAlign = "left";
+        return 316;
       }
       if (h === "side"){
-        g.fillStyle = C.primary; g.fillRect(M, 66, 16, 170);
-        g.fillStyle = C.ink; fitFont(g, title, 800, 64, 34, W - 460, HF); g.fillText(clip(g, title, W - 460), M + 38, 150);
-        g.fillStyle = C.accent; g.font = "700 24px " + FONT; spaced(g, L.bill, M + 38, 200, 6, "left");
-        dateRight(g, PW - M, 134, 178, C.ink, C.muted);
-        return 276;
+        g.fillStyle = C.primary; g.fillRect(M, 62, 16, 164);
+        g.fillStyle = C.ink; fitFont(g, title, 800, 60, 32, W - 460, HF); g.fillText(clip(g, title, W - 460), M + 38, 144);
+        g.fillStyle = C.accent; g.font = "700 23px " + FONT; spaced(g, L.bill, M + 38, 194, 6, "left");
+        dateRight(g, PW - M, 128, 172, C.ink, C.muted);
+        return 264;
       }
-      // minimal / ledger
-      g.fillStyle = C.accent; g.fillRect(M, 76, 96, 8);
-      g.fillStyle = C.ink; fitFont(g, title, 700, 66, 34, W - 440, HF); g.fillText(clip(g, title, W - 440), M, 180);
-      dateRight(g, PW - M, 128, 172, C.ink, C.muted);
-      hline(g, M, PW - M, 224, C.ink, 4);
-      return 264;
+      if (h === "ledger"){
+        g.fillStyle = C.soft; g.fillRect(M, 56, W, 150);
+        g.strokeStyle = C.primary; g.lineWidth = 3; g.strokeRect(M, 56, W, 150);
+        g.fillStyle = C.primary; fitFont(g, title, 800, 52, 28, W - 460, HF); g.fillText(clip(g, title, W - 460), M + 28, 144);
+        dateRight(g, PW - M - 28, 118, 162, C.ink, C.muted);
+        return 244;
+      }
+      g.fillStyle = C.accent; g.fillRect(M, 72, 96, 8);
+      g.fillStyle = C.ink; fitFont(g, title, 700, 64, 34, W - 440, HF); g.fillText(clip(g, title, W - 440), M, 172);
+      dateRight(g, PW - M, 124, 168, C.ink, C.muted);
+      hline(g, M, PW - M, 214, C.ink, 4);
+      return 252;
     }
     function headMore(g){
-      g.fillStyle = C.primary; g.fillRect(0, 0, PW, 108);
-      g.fillStyle = C.accent; g.fillRect(0, 108, PW, 6);
-      g.fillStyle = C.on; g.font = "800 36px " + HF; g.fillText(clip(g, title, W - 380), M, 70);
-      g.textAlign = "right"; g.font = "600 24px " + FONT; g.fillText(wp.date, PW - M, 70); g.textAlign = "left";
+      g.fillStyle = C.primary; g.fillRect(24, 24, PW - 48, 86);
+      g.fillStyle = C.accent; g.fillRect(24, 110, PW - 48, 6);
+      g.fillStyle = C.on; g.font = "800 34px " + HF; g.fillText(clip(g, title, W - 380), M, 78);
+      g.textAlign = "right"; g.font = "600 24px " + FONT; g.fillText(wp.date, PW - M, 78); g.textAlign = "left";
       return 152;
     }
     function cards(g, y0){
@@ -1603,35 +1606,71 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         list.push([L.customer, cTxt]);
       }
       if (!list.length) return y0;
-      var gap = 24, cw = (W - gap * (list.length - 1)) / list.length, h = 114;
+      if (D.cards === "stacked"){
+        list.forEach(function(cd){
+          rr(g, M, y0, W, 86, 12); g.fillStyle = C.zebra; g.fill(); g.strokeStyle = C.line; g.lineWidth = 2; g.stroke();
+          g.fillStyle = C.accent; g.font = "700 19px " + FONT; g.fillText(cd[0], M + 22, y0 + 30);
+          g.fillStyle = C.ink; fitFont(g, cd[1], 700, 28, 18, W - 44, HF); g.fillText(clip(g, cd[1], W - 44), M + 22, y0 + 68);
+          y0 += 98;
+        });
+        return y0 + 18;
+      }
+      if (D.cards === "inlineBar"){
+        var barTxt = list.map(function(cd){ return cd[0] + ": " + cd[1]; }).join("   |   ");
+        g.fillStyle = C.zebra; g.fillRect(M, y0, W, 62);
+        hline(g, M, M + W, y0, C.line, 2); hline(g, M, M + W, y0 + 62, C.line, 2);
+        g.fillStyle = C.ink; fitFont(g, barTxt, 700, 25, 17, W - 36, HF); g.fillText(clip(g, barTxt, W - 36), M + 18, y0 + 40);
+        return y0 + 88;
+      }
+      var gap = 24, cw = (W - gap * (list.length - 1)) / list.length, h = 112;
       list.forEach(function(cd, i){
         var x = M + i * (cw + gap);
-        rr(g, x, y0, cw, h, 16); g.fillStyle = C.zebra; g.fill(); g.strokeStyle = C.line; g.lineWidth = 2; g.stroke();
-        g.fillStyle = C.accent; g.fillRect(x, y0 + 22, 6, 70);
-        g.fillStyle = C.muted; g.font = "700 20px " + FONT; spaced(g, cd[0], x + 26, y0 + 40, 2, "left");
-        g.fillStyle = C.ink; fitFont(g, cd[1], 700, 32, 20, cw - 46, HF); g.fillText(clip(g, cd[1], cw - 46), x + 26, y0 + 84);
+        if (D.cards === "plain"){
+          hline(g, x, x + cw, y0 + h - 4, C.line, 2);
+        } else if (D.cards === "doubleBox"){
+          rr(g, x, y0, cw, h, 14); g.strokeStyle = C.accent; g.lineWidth = 3; g.stroke();
+        } else if (D.cards === "pills"){
+          rr(g, x, y0, cw, h, 56); g.fillStyle = C.soft; g.fill();
+        } else if (D.cards === "topTag"){
+          g.fillStyle = C.zebra; g.fillRect(x, y0, cw, h);
+          g.fillStyle = C.primary; g.fillRect(x, y0, cw, 8);
+        } else {
+          rr(g, x, y0, cw, h, 16); g.fillStyle = C.zebra; g.fill(); g.strokeStyle = C.line; g.lineWidth = 2; g.stroke();
+          g.fillStyle = C.accent; g.fillRect(x, y0 + 22, 6, 68);
+        }
+        var pad = D.cards === "plain" ? 0 : 28;
+        g.fillStyle = C.muted; g.font = "700 20px " + FONT; spaced(g, cd[0], x + pad, y0 + 38, 2, "left");
+        g.fillStyle = C.ink; fitFont(g, cd[1], 700, 30, 19, cw - pad - 22, HF); g.fillText(clip(g, cd[1], cw - pad - 22), x + pad, y0 + 82);
       });
-      return y0 + h + 30;
+      return y0 + h + 28;
     }
     function tHead(g, y0){
       if (D.thead === "solid" || D.thead === "pill"){
-        rr(g, M, y0, W, 64, D.thead === "pill" ? 32 : 12); g.fillStyle = C.primary; g.fill();
+        rr(g, M, y0, W, 62, D.thead === "pill" ? 31 : 12); g.fillStyle = C.primary; g.fill();
       } else if (D.thead === "double"){
-        hline(g, M, M + W, y0 + 4, C.accent, 3); hline(g, M, M + W, y0 + 62, C.primary, 3);
+        hline(g, M, M + W, y0 + 4, C.accent, 3); hline(g, M, M + W, y0 + 60, C.primary, 3);
       } else if (D.thead === "grid"){
-        g.fillStyle = C.soft; g.fillRect(M, y0, W, 64); g.strokeStyle = C.primary; g.lineWidth = 2; g.strokeRect(M, y0, W, 64);
+        g.fillStyle = C.soft; g.fillRect(M, y0, W, 62); g.strokeStyle = C.primary; g.lineWidth = 2; g.strokeRect(M, y0, W, 62);
       } else {
-        hline(g, M, M + W, y0 + 64, C.ink, 3);
+        hline(g, M, M + W, y0 + 62, C.ink, 3);
       }
       g.fillStyle = (D.thead === "solid" || D.thead === "pill") ? C.on : C.ink;
-      g.font = "700 24px " + FONT; g.textAlign = "left";
-      g.fillText("#", COL.n, y0 + 41); g.fillText(L.item, COL.item, y0 + 41);
-      g.textAlign = "right"; g.fillText(L.amount, COL.amt, y0 + 41); g.textAlign = "left";
-      return y0 + 68;
+      g.font = "700 23px " + FONT; g.textAlign = "left";
+      g.fillText("#", COL.n, y0 + 40); g.fillText(L.item, COL.item, y0 + 40);
+      g.textAlign = "right"; g.fillText(L.amount, COL.amt, y0 + 40); g.textAlign = "left";
+      return y0 + 66;
     }
     function drawRow(g, y0, it, idx){
-      if (idx % 2 === 0){ g.fillStyle = C.zebra; g.fillRect(M, y0, W, ROWH); }
-      hline(g, M, M + W, y0 + ROWH, C.line, 1.5);
+      if (D.rows === "zebra" && idx % 2 === 0){ g.fillStyle = C.zebra; g.fillRect(M, y0, W, ROWH); }
+      else if (D.rows === "boxed"){ rr(g, M, y0 + 4, W, ROWH - 8, 12); g.fillStyle = idx % 2 === 0 ? C.zebra : C.soft; g.fill(); }
+      else if (D.rows === "grid"){ g.strokeStyle = C.line; g.lineWidth = 1.5; g.strokeRect(M, y0, W, ROWH); }
+
+      if (D.rows === "dots"){
+        g.save(); g.setLineDash([4, 6]); hline(g, M, M + W, y0 + ROWH, C.line, 2); g.restore();
+      } else if (D.rows !== "boxed" && D.rows !== "grid"){
+        hline(g, M, M + W, y0 + ROWH, C.line, D.rows === "hairline" ? 1 : 1.5);
+      }
+
       var name = (it.n || "").trim(), formula = /[^0-9.]/.test(it.x) ? prettyExpr(it.x) : "", maxW = COL.amt - COL.item - 340;
       g.fillStyle = C.muted; g.font = "600 25px " + FONT; g.fillText(String(idx + 1), COL.n, y0 + 50);
       g.fillStyle = name ? C.ink : C.muted; g.font = "600 29px " + FONT;
@@ -1643,59 +1682,70 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       g.fillText((neg ? "− " : "") + shown, COL.amt, y0 + 50); g.textAlign = "left";
     }
     function totals(g, y0){
-      var bw = 640, bh = 162, x = PW - M - bw, totalText = formatNum(splitNum(info.total));
-      g.fillStyle = C.muted; g.font = "600 25px " + FONT; g.fillText(L.lineCount + ": " + info.items.length, M, y0 + 46);
+      var bw = 620, bh = 158, x = (D.total === "centerSeal") ? (PW - bw) / 2 : (D.total === "leftRight" || D.total === "banner" ? M : PW - M - bw);
+      var totalText = formatNum(splitNum(info.total));
+      if (D.total === "banner") bw = W;
 
-      // यदि कुल राशि किसी भारतीय नोट (1,2,5,10,20,50,100,200,500) के बराबर हो, तो बाईं ओर सजावटी नोट-ग्राफ़िक बनाएँ
+      g.fillStyle = C.muted; g.font = "600 24px " + FONT;
+      if (D.total !== "banner") g.fillText(L.lineCount + ": " + info.items.length, M, y0 + 40);
+
       var numTotal = parseFloat(info.total);
       if (Number.isInteger(numTotal) && NOTES[numTotal]){
-        drawDecorativeNote(g, M, y0 + 68, numTotal);
+        var noteX = (D.total === "leftRight") ? (PW - M - 280) : M;
+        var noteY = (D.total === "banner") ? (y0 + bh + 18) : (y0 + 60);
+        drawDecorativeNote(g, noteX, noteY, numTotal);
       }
 
-      if (D.total === "box" || D.total === "skew"){
-        rr(g, x, y0, bw, bh, D.total === "skew" ? 8 : 24); g.fillStyle = C.primary; g.fill();
-        if (D.total === "skew"){ g.fillStyle = C.accent; g.fillRect(x, y0, 12, bh); }
-        g.fillStyle = C.accent; g.font = "700 23px " + FONT; spaced(g, L.total, x + 36, y0 + 52, 3, "left");
-        g.fillStyle = C.on; g.textAlign = "right"; fitFont(g, totalText, 800, 74, 38, bw - 72, HF); g.fillText(totalText, x + bw - 36, y0 + 128);
-      } else if (D.total === "seal" || D.total === "card"){
-        rr(g, x, y0, bw, bh, 22); g.fillStyle = C.soft; g.fill(); g.strokeStyle = C.accent; g.lineWidth = 4; g.stroke();
-        g.fillStyle = C.primary; g.font = "700 23px " + FONT; spaced(g, L.total, x + 36, y0 + 56, 3, "left");
-        g.fillStyle = C.primary; g.textAlign = "right"; fitFont(g, totalText, 800, 74, 38, bw - 72, HF); g.fillText(totalText, x + bw - 36, y0 + 130);
+      if (D.total === "rightBox" || D.total === "skewLeft" || D.total === "banner" || D.total === "leftRight"){
+        rr(g, x, y0, bw, bh, D.total === "skewLeft" ? 8 : 22); g.fillStyle = C.primary; g.fill();
+        if (D.total === "skewLeft"){ g.fillStyle = C.accent; g.fillRect(x, y0, 12, bh); }
+        g.fillStyle = C.accent; g.font = "700 23px " + FONT; spaced(g, L.total, x + 34, y0 + 50, 3, "left");
+        g.fillStyle = C.on; g.textAlign = "right"; fitFont(g, totalText, 800, 72, 36, bw - 72, HF); g.fillText(totalText, x + bw - 34, y0 + 124);
+      } else if (D.total === "centerSeal" || D.total === "floatingCard"){
+        rr(g, x, y0, bw, bh, 24); g.fillStyle = C.soft; g.fill(); g.strokeStyle = C.accent; g.lineWidth = 4; g.stroke();
+        g.fillStyle = C.primary; g.font = "700 23px " + FONT; spaced(g, L.total, x + 36, y0 + 54, 3, "left");
+        g.fillStyle = C.primary; g.textAlign = "right"; fitFont(g, totalText, 800, 72, 36, bw - 72, HF); g.fillText(totalText, x + bw - 36, y0 + 126);
       } else {
         hline(g, x, PW - M, y0, C.ink, 4);
-        g.fillStyle = C.muted; g.font = "700 23px " + FONT; spaced(g, L.total, x, y0 + 52, 3, "left");
-        g.fillStyle = C.ink; g.textAlign = "right"; fitFont(g, totalText, 800, 80, 38, bw, HF); g.fillText(totalText, PW - M, y0 + 132);
+        g.fillStyle = C.muted; g.font = "700 23px " + FONT; spaced(g, L.total, x, y0 + 50, 3, "left");
+        g.fillStyle = C.ink; g.textAlign = "right"; fitFont(g, totalText, 800, 76, 36, bw, HF); g.fillText(totalText, PW - M, y0 + 128);
         hline(g, x, PW - M, y0 + bh, C.line, 3);
       }
       g.textAlign = "left";
       if (info.words){
-        var yy = y0 + bh + 48;
+        var yy = y0 + bh + 46;
         g.textAlign = "right"; g.fillStyle = C.muted; g.font = "700 21px " + FONT; g.fillText(L.inWords, PW - M, yy);
-        g.fillStyle = C.ink; g.font = "600 28px " + FONT;
-        wordLines.forEach(function(ln, i){ g.fillText(ln, PW - M, yy + 42 + i * 38); });
+        g.fillStyle = C.ink; g.font = "600 27px " + FONT;
+        wordLines.forEach(function(ln, i){ g.fillText(ln, PW - M, yy + 40 + i * 36); });
         g.textAlign = "left";
       }
     }
     function footer(p, n, all){
       var g = p.g;
-      hline(g, M, PW - M, FL - 14, C.line, 2);
-      drawAppLogoAndTitle(g, M, FL + 56, D);
-      g.fillStyle = C.muted; g.font = "700 24px " + FONT; g.textAlign = "right";
-      g.fillText(n + " / " + all, PW - M, FL + 40); g.textAlign = "left";
+      hline(g, M, PW - M, FL - 18, C.line, 2);
+      var lx = D.logoPos === "center" ? (PW / 2) : (D.logoPos === "right" ? PW - M - 110 : M + 95);
+      drawAppLogoAndTitle(g, lx, FL + 54, D);
+      g.fillStyle = C.muted; g.font = "700 24px " + FONT;
+      if (D.logoPos === "right"){
+        g.textAlign = "left"; g.fillText(n + " / " + all, M, FL + 40);
+      } else {
+        g.textAlign = "right"; g.fillText(n + " / " + all, PW - M, FL + 40);
+      }
+      g.textAlign = "left";
     }
 
     curPage = newPage(0);
     if (info.words){
-      curPage.g.font = "600 28px " + FONT; wordLines = wrap(curPage.g, info.words, W * 0.65).slice(0, 3);
-      TOTALS_H = 260 + 38 * (wordLines.length - 1);
+      curPage.g.font = "600 27px " + FONT; wordLines = wrap(curPage.g, info.words, W * 0.62).slice(0, 3);
+      TOTALS_H = 260 + 36 * (wordLines.length - 1);
     }
     y = headFirst(curPage.g); y = cards(curPage.g, y); y = tHead(curPage.g, y);
     info.items.forEach(function(it, i){
       if (y + ROWH > LIMIT){ curPage = newPage(pages.length); y = headMore(curPage.g); y = tHead(curPage.g, y); }
       drawRow(curPage.g, y, it, i); y += ROWH;
     });
-    y += 34;
-    if (y + TOTALS_H > FL - 24){ curPage = newPage(pages.length); y = headMore(curPage.g); }
+    y += 32;
+    if (y + TOTALS_H > FL - 26){ curPage = newPage(pages.length); y = headMore(curPage.g); }
     totals(curPage.g, y);
     pages.forEach(function(p, i){ footer(p, i + 1, pages.length); });
     return pages.map(function(p){ return p.cv; });
@@ -1970,6 +2020,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
             shop: h.shop || "", seller: h.seller || "", sellerPhone: h.sellerPhone || "",
             customer: h.customer || "", customerPhone: h.customerPhone || "",
             design: (typeof h.design === "number" && h.design >= 0 && h.design < DESIGNS.length) ? h.design : pdfDesign,
+            seed: typeof h.seed === "number" ? h.seed : 0,
             dirty: false,
             items: itemsArr.map(function(it){ return {s: it.s, x: it.x, v: it.v, n: it.n || ""}; })
           };
@@ -2015,7 +2066,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     renderHistory();
   });
 
-  // ===== 12. थीम, आवाज़, रजिस्ट्रेशन, बैकअप और सेटिंग्स =====
+  // ===== 12. थीम, आवाज़, 3-नंबर रजिस्ट्रेशन, बैकअप और सेटिंग्स =====
   function svg(inner){
     return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
@@ -2077,11 +2128,36 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
   function setSound(on){ soundOn = on; lsSet(SKEY, on ? "on" : "off"); syncOpts(); beep("5"); }
 
+  // रजिस्ट्रेशन में 3 तक मोबाइल नंबर
+  var regPhonesTemp = [""];
+  function renderRegPhones(){
+    var box = $("regPhonesList"); box.innerHTML = "";
+    regPhonesTemp.forEach(function(val, idx){
+      var row = el("div", "reg-phone-row");
+      var inp = el("input", "fld"); inp.type = "tel"; inp.maxLength = 20; inp.autocomplete = "off";
+      inp.placeholder = t("sellerPhonePh") + (regPhonesTemp.length > 1 ? " (" + (idx + 1) + ")" : "");
+      inp.value = val;
+      inp.addEventListener("input", function(){ regPhonesTemp[idx] = inp.value; });
+      row.appendChild(inp);
+      if (regPhonesTemp.length > 1){
+        var del = el("button", "bdel", "×"); del.type = "button";
+        del.addEventListener("click", function(){ regPhonesTemp.splice(idx, 1); renderRegPhones(); });
+        row.appendChild(del);
+      }
+      box.appendChild(row);
+    });
+    $("regAddPhoneBtn").style.display = regPhonesTemp.length < 3 ? "inline-block" : "none";
+  }
+  $("regAddPhoneBtn").addEventListener("click", function(){
+    if (regPhonesTemp.length < 3){ regPhonesTemp.push(""); renderRegPhones(); }
+  });
+
   function openRegModal(){
     $("settings").classList.remove("open");
     $("regShop").value = (regProfile && regProfile.shop) || "";
     $("regSeller").value = (regProfile && regProfile.seller) || "";
-    $("regPhone").value = (regProfile && regProfile.phone) || "";
+    regPhonesTemp = (regProfile && regProfile.phones && regProfile.phones.length) ? regProfile.phones.slice(0, 3) : [""];
+    renderRegPhones();
     $("regModal").classList.add("open");
     replaceModalState("regModal");
   }
@@ -2096,14 +2172,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   on("themeBtn", function(){ setTheme(isDark() ? "light" : "dark"); });
   on("gearBtn", function(){ if (kbMode) setKbMode(false); syncOpts(); updateRegUi(); sheet("settings", true); });
   on("regLink", openRegModal);
-  on("editRegBtn", openRegModal);
   on("regSaveBtn", function(){
-    var s = $("regShop").value.trim(), sl = $("regSeller").value.trim(), ph = $("regPhone").value.trim();
-    regProfile = (s || sl || ph) ? {shop: s, seller: sl, phone: ph} : null;
+    var s = $("regShop").value.trim(), sl = $("regSeller").value.trim();
+    var phs = regPhonesTemp.map(function(p){ return String(p || "").trim(); }).filter(Boolean).slice(0, 3);
+    regProfile = (s || sl || phs.length) ? {shop: s, seller: sl, phones: phs} : null;
     lsSet(REGKEY, JSON.stringify(regProfile));
     if (s) lsSet(SHOPKEY, s);
     if (sl) lsSet(SELLERKEY, sl);
-    if (ph) lsSet(PHONEKEY, ph);
+    if (phs.length) lsSet(PHONEKEY, phs.join(", "));
     updateRegUi();
     sheet("regModal", false);
     toast(t("regSaved"));
