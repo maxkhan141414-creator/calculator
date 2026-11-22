@@ -63,14 +63,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
 /* ===== डिस्प्ले ===== */
 .panel{background:linear-gradient(160deg,var(--p1),var(--p2));color:var(--panel-text);border:1px solid var(--panel-line);border-radius:24px;padding:14px;box-shadow:var(--panel-shadow);display:flex;flex-direction:column;min-height:42%}
-.app.kb-active .panel{flex:0 0 auto;min-height:220px}
-.app.kb-active .pad{display:none}
 .top{display:flex;align-items:center;gap:8px}
 .round{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--soft);color:var(--panel-text);display:grid;place-items:center;cursor:pointer}
-.round.on{background:var(--eq);color:var(--eq-text)}
-.kb-switch{margin-left:auto}
-.kb-hidden-input{display:none;position:absolute;inset:0;width:100%;height:100%;opacity:0.001;border:0;background:transparent;color:transparent;caret-color:transparent;font-size:16px;z-index:2}
-.app.kb-active .kb-hidden-input{display:block}
 .display-area{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:6px 2px}
 .expr,.main{width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
 .expr::-webkit-scrollbar,.main::-webkit-scrollbar{display:none}
@@ -116,6 +110,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 /* ===== नीचे से खुलने वाले पैनल ===== */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
 .overlay.open{display:flex}
+.overlay.confirm-top{z-index:200;align-items:center;padding:16px}
+.confirm-box{background:var(--bg);width:100%;max-width:360px;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 12px 32px rgba(0,0,0,.35);border:1px solid var(--panel-line)}
+.confirm-box p{margin:0;font-size:1.05rem;font-weight:600;color:var(--panel-text);line-height:1.45}
 .sheet{background:var(--bg);width:100%;max-width:480px;max-height:92%;overflow-y:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;box-shadow:0 -5px 20px rgba(0,0,0,.2)}
 .sheet h2{margin:0;font-size:1.25rem;color:var(--panel-text)}
 .group{display:flex;flex-direction:column;gap:8px;background:var(--p1);padding:12px;border-radius:16px;border:1px solid var(--panel-line)}
@@ -125,10 +122,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .opts button,.actions button{flex:1}
 .opts button.on{background:var(--eq);color:var(--eq-text)}
 .actions .danger{background:var(--clear);color:var(--clear-text)}
+.actions button:disabled{opacity:.45;cursor:default}
 .wide{width:100%}
 .empty{color:var(--panel-sub);text-align:center;padding:16px 0}
 
-/* लाल रंग का रजिस्ट्रेशन / प्रोफ़ाइल अपडेट टेक्स्ट (भाषा बॉक्स के ठीक ऊपर) */
+/* लाल रंग का रजिस्ट्रेशन / प्रोफ़ाइल अपडेट टेक्स्ट */
 .reg-link{align-self:flex-start;background:transparent;border:0;padding:2px 2px;margin:0;color:var(--clear-text);font:inherit;font-size:1rem;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .reg-link.update-mode{color:var(--opc)}
 .reg-phones{display:flex;flex-direction:column;gap:8px}
@@ -144,8 +142,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .hist-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .sel-all-lbl{display:flex;align-items:center;gap:6px;font-size:.9rem;font-weight:700;color:var(--panel-text);cursor:pointer}
 .sel-all-lbl input{width:18px;height:18px;accent-color:var(--eq);cursor:pointer}
-.del-sel-btn{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-size:.88rem;font-weight:700;background:var(--clear);color:var(--clear-text);cursor:pointer}
-.del-sel-btn:disabled{opacity:.45;cursor:default}
 .list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;max-height:44vh}
 .item-row{display:flex;align-items:stretch;gap:8px}
 .item-chk{flex:none;display:flex;align-items:center}
@@ -156,7 +152,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .item small{display:block;color:var(--panel-sub);font-size:.85rem;margin-top:3px;overflow-wrap:anywhere}
 .item b{font-size:1.2rem;color:var(--panel-text)}
 
-/* ===== बिल वाला पन्ना ===== */
+/* ===== बिल वाला पन्ना (सामान का नाम पूरा दिखे, कटे नहीं) ===== */
 .bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .bdate{color:var(--panel-sub);font-size:.8rem;text-align:right}
 .bill-actions-top{display:flex;gap:8px;align-items:center}
@@ -166,18 +162,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 .fld::placeholder{color:var(--panel-sub)}
 .frow{display:flex;gap:8px}
 .paper{background:var(--p1);border:1px solid var(--panel-line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.brow{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px dashed var(--panel-line)}
-.bname-wrap{flex:1;min-width:0;display:flex;gap:6px;align-items:center}
-.bname{flex:1;min-width:0;padding:8px 10px;font-size:.95rem}
-.addItemBtn{flex:none;width:40px;height:40px;border-radius:10px;background:var(--eq);color:var(--eq-text);border:0;font-size:1.4rem;font-weight:700;cursor:pointer;display:grid;place-items:center}
-.bnum{flex:0 0 38%;min-width:112px;border:1px solid var(--panel-line);border-radius:10px;padding:4px 8px;background:var(--bg);color:var(--panel-text);overflow:hidden}
+.brow{display:flex;flex-wrap:nowrap;align-items:center;gap:5px;padding-bottom:10px;border-bottom:1px dashed var(--panel-line)}
+.bname{flex:1 1 0;min-width:0;padding:8px 9px;font-size:.96rem}
+.addItemBtn{flex:none;width:30px;height:36px;border-radius:9px;background:var(--eq);color:var(--eq-text);border:0;font-size:1.25rem;font-weight:700;cursor:pointer;display:grid;place-items:center}
+.bnum{flex:0 0 34%;max-width:150px;min-width:102px;border:1px solid var(--panel-line);border-radius:10px;padding:4px 8px;background:var(--bg);color:var(--panel-text);overflow:hidden}
 .bline{display:flex;align-items:center;gap:4px}
-.bsg{flex:none;border:0;background:transparent;color:var(--opc);font:inherit;font-size:1.1rem;font-weight:700;cursor:pointer;padding:0 2px}
+.bsg{flex:none;border:0;background:transparent;color:var(--opc);font:inherit;font-size:1.15rem;font-weight:700;cursor:pointer;padding:0 2px}
 .bsg.neg{color:var(--clear-text)}
-.bamt{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--panel-text);font:inherit;font-size:1.1rem;font-weight:700;text-align:right;padding:2px 0}
+.bamt{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--panel-text);font:inherit;font-size:1.15rem;font-weight:700;text-align:right;padding:2px 0}
 .bamt::placeholder{color:var(--panel-sub);opacity:.6}
 .bnum small{display:block;color:var(--panel-sub);font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bdel{flex:none;width:32px;height:32px;border:0;border-radius:50%;background:var(--clear);color:var(--clear-text);font-size:1.25rem;line-height:1;cursor:pointer}
+.bdel{flex:none;width:30px;height:36px;border:0;border-radius:9px;background:var(--clear);color:var(--clear-text);font-size:1.2rem;line-height:1;cursor:pointer;display:grid;place-items:center}
 .total-wrapper{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:4px}
 .total-label{font-weight:700;font-size:1.05rem;color:var(--panel-text)}
 .total-content{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;width:100%;max-width:360px;background:var(--bg);border:1px solid var(--panel-line);border-radius:12px;padding:6px 10px}
@@ -235,11 +230,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     <div class="top">
       <button class="round" id="gearBtn" type="button" data-ia="settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="round" id="themeBtn" type="button" data-ia="theme"></button>
-      <button class="round kb-switch" id="kbBtn" type="button" aria-pressed="false" data-ia="kbSwitch"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"/><line x1="6" y1="9" x2="6.01" y2="9"/><line x1="10" y1="9" x2="10.01" y2="9"/><line x1="14" y1="9" x2="14.01" y2="9"/><line x1="18" y1="9" x2="18.01" y2="9"/><line x1="6" y1="13" x2="6.01" y2="13"/><line x1="10" y1="13" x2="10.01" y2="13"/><line x1="14" y1="13" x2="14.01" y2="13"/><line x1="18" y1="13" x2="18.01" y2="13"/><line x1="8" y1="16" x2="16" y2="16"/></svg></button>
     </div>
 
     <div class="display-area">
-      <input id="kbInput" class="kb-hidden-input" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true">
       <div class="expr" id="expr"><div class="expr-in" id="exprIn"></div></div>
       <div class="main" id="main"><div class="main-in" id="mainIn"></div></div>
     </div>
@@ -339,13 +332,24 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       <input class="fld" id="histSearch" type="search" autocomplete="off" data-ph="searchBillPh">
       <div class="hist-bar">
         <label class="sel-all-lbl"><input type="checkbox" id="histSelectAll"><span data-i="selectAll"></span></label>
-        <button type="button" class="del-sel-btn" id="histDelSel" data-i="deleteSelected" disabled></button>
       </div>
     </div>
     <div class="list" id="list"></div>
     <div class="actions">
       <button type="button" id="histClear" class="danger" data-i="clearHist"></button>
+      <button type="button" id="histDelSel" class="danger" data-i="deleteSelected" style="display:none" disabled></button>
       <button type="button" id="histClose" data-i="close"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ऐप के अंदर कन्फ़र्मेशन पॉपअप -->
+<div class="overlay confirm-top" id="confirmModal">
+  <div class="confirm-box" role="alertdialog">
+    <p id="confirmMsg"></p>
+    <div class="actions">
+      <button type="button" id="confirmYes" class="danger" data-i="yesDelete"></button>
+      <button type="button" id="confirmNo" data-i="cancelBtn"></button>
     </div>
   </div>
 </div>
@@ -361,11 +365,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     <input class="fld" id="billShop" type="text" maxlength="50" autocomplete="off" data-ph="shopPh">
     <div class="frow">
       <input class="fld" id="billSeller" type="text" maxlength="40" autocomplete="off" data-ph="sellerPh">
-      <input class="fld" id="billSellerPhone" type="text" maxlength="60" autocomplete="off" data-ph="sellerPhonePh">
+      <input class="fld" id="billSellerPhone" type="text" maxlength="40" autocomplete="off" data-ph="sellerPhonePh">
     </div>
     <div class="frow">
       <input class="fld" id="billCustomer" type="text" maxlength="40" autocomplete="off" data-ph="customerPh">
-      <input class="fld" id="billCustomerPhone" type="tel" maxlength="20" autocomplete="off" data-ph="customerPhonePh">
+      <input class="fld" id="billCustomerPhone" type="tel" maxlength="10" inputmode="numeric" autocomplete="off" data-ph="customerPhonePh">
     </div>
     <div class="paper">
       <div id="billItems"></div>
@@ -477,6 +481,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       var t = tokens[i++];
       if (t === "-") return -factor();
       if (t === "+") return factor();
+      if (t === "*" || t === "/" || t === "%"){
+        if (i < tokens.length && isNum(tokens[i])){ i++; return 0; } // खाली में ×5 = 0
+        throw new Error("bad");
+      }
       if (!isNum(t)) throw new Error("bad");
       var v = parseFloat(t);
       while (tokens[i] === "%"){ v /= 100; i++; }
@@ -654,7 +662,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   // ===== 5. ऐप की भाषा, तारीख़ और छोटा संदेश =====
   var I18N = {
-    hi: {title:"बिलिंग कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", kbSwitch:"फ़ोन कीबोर्ड बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
+    hi: {title:"बिलिंग कैलकुलेटर", settings:"सेटिंग्स", theme:"थीम बदलें", history:"हिस्ट्री", erase:"मिटाएँ",
          billBtn:"बिल बनाएँ", speakBtn:"बोलकर सुनें", copyBtn:"कॉपी करें",
          regNow:"रजिस्ट्रेशन करें", updateReg:"प्रोफ़ाइल बदलें", regTitle:"दुकान रजिस्ट्रेशन", regSaved:"रजिस्ट्रेशन सेव हो गया",
          addMobile:"+ मोबाइल नंबर जोड़ें", saveBtn:"सेव करें", backupExport:"बैकअप सेव", backupImport:"बैकअप लोड",
@@ -664,8 +672,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
          histCalcTab:"हिसाब", histBillTab:"बिल",
          searchBillPh:"नाम, मोबाइल नंबर, दुकान या सामान खोजें…",
          selectAll:"सभी चुनें", deleteSelected:"चुने हुए हटाएँ",
+         yesDelete:"हाँ, हटाएँ", cancelBtn:"नहीं",
          confirmClearCalc:"क्या आप कैलकुलेशन हिस्ट्री को साफ़ करना चाहते हैं?",
-         confirmClearBill:"क्या आप सभी बिल हिस्ट्री को साफ़ करना चाहते हैं?",
          confirmDelSel:"क्या आप चुने हुए बिल हटाना चाहते हैं?",
          storageWarn:"बिल हिस्ट्री 15 MB से ज़्यादा हो गई है — हटाने के लिए यहाँ दबाएँ",
          noHist:"अभी कोई हिसाब नहीं है।", noBillHist:"अभी कोई बिल नहीं है।", noMatch:"कोई मिलता-जुलता बिल नहीं मिला।",
@@ -673,14 +681,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
          err:"त्रुटि", eDiv:"0 से भाग नहीं हो सकता", eBig:"संख्या बहुत बड़ी है", eBad:"हिसाब सही नहीं है",
          copied:"कॉपी हो गया", copyFail:"कॉपी नहीं हो पाया", notNum:"यह संख्या या हिसाब नहीं लगता",
          speakNo:"इस फ़ोन में बोलने की सुविधा नहीं है",
-         billTitle:"बिल / हिसाब", pdfBtn:"PDF देखें", shopPh:"दुकान का नाम (चाहें तो)", sellerPh:"दुकानदार का नाम", sellerPhonePh:"दुकानदार मोबाइल (चाहें तो)",
-         customerPh:"ग्राहक का नाम (चाहें तो)", customerPhonePh:"ग्राहक मोबाइल (चाहें तो)",
+         billTitle:"बिल / हिसाब", pdfBtn:"PDF देखें", shopPh:"दुकान का नाम (चाहें तो)", sellerPh:"दुकानदार का नाम", sellerPhonePh:"दुकानदार मोबाइल (10 अंक)",
+         customerPh:"ग्राहक का नाम (चाहें तो)", customerPhonePh:"ग्राहक मोबाइल (10 अंक)",
          itemPh:"सामान का नाम", amtPh:"0", total:"कुल", remove:"यह लाइन हटाएँ", addLine:"नई लाइन जोड़ें", noLines:"कोई लाइन नहीं है।", billTag:"बिल", lines:"लाइन",
          editBill:"बदलें", share:"शेयर", print:"प्रिंट", download:"डाउनलोड", preparing:"PDF बन रही है…", downloaded:"PDF डाउनलोड हो गई", pdfFail:"PDF नहीं बन पाई",
          textCopied:"बिल का लिखा रूप कॉपी हो गया", shareFail:"शेयर नहीं हो पाया", designPick:"डिज़ाइन चुनें",
          pdf:{bill:"बिल", seller:"विक्रेता", customer:"ग्राहक", phone:"मो.", item:"सामान", amount:"राशि", total:"कुल", inWords:"शब्दों में",
               itemN:"सामान", lineCount:"कुल लाइनें"}},
-    en: {title:"Billing Calculator", settings:"Settings", theme:"Switch theme", kbSwitch:"Switch phone keyboard", history:"History", erase:"Erase",
+    en: {title:"Billing Calculator", settings:"Settings", theme:"Switch theme", history:"History", erase:"Erase",
          billBtn:"Make a bill", speakBtn:"Listen", copyBtn:"Copy",
          regNow:"Registration Now", updateReg:"Update Registration", regTitle:"Shop Registration", regSaved:"Registration saved",
          addMobile:"+ Add Mobile Number", saveBtn:"Save", backupExport:"Save Backup", backupImport:"Load Backup",
@@ -690,8 +698,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
          histCalcTab:"Calculation", histBillTab:"Billing",
          searchBillPh:"Search name, mobile, shop or item…",
          selectAll:"Select All", deleteSelected:"Delete Selected",
+         yesDelete:"Yes, Delete", cancelBtn:"Cancel",
          confirmClearCalc:"Do you want to clear calculation history?",
-         confirmClearBill:"Do you want to clear all billing history?",
          confirmDelSel:"Do you want to delete selected bills?",
          storageWarn:"Billing history exceeded 15 MB — tap here to manage",
          noHist:"No calculations yet.", noBillHist:"No bills yet.", noMatch:"No matching bills found.",
@@ -699,8 +707,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
          err:"Error", eDiv:"Cannot divide by 0", eBig:"Number is too large", eBad:"Invalid calculation",
          copied:"Copied", copyFail:"Could not copy", notNum:"That does not look like a number or sum",
          speakNo:"Speech is not available on this phone",
-         billTitle:"Bill / Statement", pdfBtn:"PDF Preview", shopPh:"Shop name (optional)", sellerPh:"Seller name", sellerPhonePh:"Seller mobile (optional)",
-         customerPh:"Customer name (optional)", customerPhonePh:"Customer mobile (optional)",
+         billTitle:"Bill / Statement", pdfBtn:"PDF Preview", shopPh:"Shop name (optional)", sellerPh:"Seller name", sellerPhonePh:"Seller mobile (10 digits)",
+         customerPh:"Customer name (optional)", customerPhonePh:"Customer mobile (10 digits)",
          itemPh:"Item name", amtPh:"0", total:"Total", remove:"Remove this line", addLine:"Add a line", noLines:"No lines.", billTag:"Bill", lines:"lines",
          editBill:"Edit", share:"Share", print:"Print", download:"Download", preparing:"Making the PDF…", downloaded:"PDF downloaded", pdfFail:"Could not make the PDF",
          textCopied:"Bill text copied", shareFail:"Could not share", designPick:"Choose design",
@@ -723,6 +731,23 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     rl.textContent = t(hasReg ? "updateReg" : "regNow");
     rl.classList.toggle("update-mode", hasReg);
   }
+
+  // ऐप के अंदर कन्फ़र्मेशन पॉपअप (फोन के डिफ़ॉल्ट confirm की जगह)
+  var confirmCb = null;
+  function appConfirm(msg, onYes){
+    confirmCb = onYes;
+    $("confirmMsg").textContent = msg;
+    $("confirmModal").classList.add("open");
+  }
+  $("confirmYes").addEventListener("click", function(){
+    $("confirmModal").classList.remove("open");
+    var fn = confirmCb; confirmCb = null;
+    if (fn) fn();
+  });
+  $("confirmNo").addEventListener("click", function(){
+    $("confirmModal").classList.remove("open");
+    confirmCb = null;
+  });
 
   var DAYS = {
     hi: ["रविवार","सोमवार","मंगलवार","बुधवार","गुरुवार","शुक्रवार","शनिवार"],
@@ -776,7 +801,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   // ===== 6. हिसाब की स्थिति, कर्सर और बटन =====
   var expr = "", cur = 0, result = null, err = "";
-  var kbMode = false;
 
   function insertAt(s){ expr = expr.slice(0, cur) + s + expr.slice(cur); cur += s.length; }
   function numAround(p){
@@ -793,7 +817,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     var exprStr = (e === null || e === undefined) ? "" : String(e).trim();
     var resStr = (r === null || r === undefined) ? "" : String(r).trim();
 
-    if (!exprStr || exprStr === "-" || exprStr === "+" || !resStr) return;
+    if (!exprStr || exprStr === "-" || exprStr === "+" || exprStr === "*" || exprStr === "/" || !resStr) return;
     if (resStr === "NaN" || resStr === "Infinity" || resStr === "-Infinity") return;
     if (/^[+-]?\d+(?:\.\d+)?$/.test(exprStr)) return;
 
@@ -808,7 +832,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       if (expr === ""){ expr = "-"; cur = 1; }
       return;
     }
-    if (parseFloat(tok) === 0) return; // 0 पर −0 न बने
+    if (parseFloat(tok) === 0) return;
     var before = expr.slice(0, s), p = before.charAt(before.length - 1), pp = before.charAt(before.length - 2);
     if (p === "+") expr = before.slice(0, -1) + "-" + expr.slice(s);
     else if (p === "-"){
@@ -816,15 +840,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       expr = before.slice(0, -1) + (binary ? "+" : "") + expr.slice(s);
       if (!binary) cur -= 1;
     } else { expr = before + "-" + expr.slice(s); cur += 1; }
-  }
-
-  function syncKbInput(){
-    var inp = $("kbInput");
-    if (!inp) return;
-    if (inp.value !== expr) inp.value = expr;
-    try {
-      if (document.activeElement === inp) inp.setSelectionRange(cur, cur);
-    } catch(e){}
   }
 
   function press(k){
@@ -846,20 +861,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       if (result !== null) continueFromResult();
       var prev = expr.charAt(cur - 1);
       if (cur === 0){
-        if (k === "-" || k === "+") insertAt(k);
-        else insertAt("0" + k);
+        insertAt(k); // बिना आगे फालतू 0 लगाए सीधे ऑपरेटर
       } else if (/[+\-*\/]/.test(prev)){
-        if (k === "-" && (prev === "*" || prev === "/")) insertAt("-");
-        else {
-          var s = cur;
-          while (s > 0 && /[+\-*\/]/.test(expr.charAt(s - 1))) s--;
-          var rep = (s === 0 && k !== "-" && k !== "+") ? ("0" + k) : k;
-          expr = expr.slice(0, s) + rep + expr.slice(cur); cur = s + rep.length;
-        }
+        // एक समय में सिर्फ़ एक ही ऑपरेटर दिखे (× के बाद − दबाने पर − से बदल जाए)
+        var s = cur;
+        while (s > 0 && /[+\-*\/]/.test(expr.charAt(s - 1))) s--;
+        expr = expr.slice(0, s) + k + expr.slice(cur);
+        cur = s + 1;
       } else insertAt(k);
     } else if (k === "%"){
       if (result !== null) continueFromResult();
-      if (cur === 0) insertAt("0%");
+      if (cur === 0) insertAt("%");
       else if (/[0-9]/.test(expr.charAt(cur - 1))) insertAt("%");
     } else if (k === "+/-"){
       if (result !== null){
@@ -872,7 +884,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       if (cur > 0){ expr = expr.slice(0, cur - 1) + expr.slice(cur); cur--; }
     } else if (k === "C"){
       var cleanExpr = trimOps(expr);
-      if (cleanExpr && cleanExpr !== "-" && cleanExpr !== "+"){
+      if (cleanExpr && !/^[+\-*\/]$/.test(cleanExpr)){
         var valToSave = null;
         if (result !== null && result !== undefined && !err) {
           valToSave = String(result);
@@ -887,7 +899,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     } else if (k === "="){
       if (result !== null) return;
       var e = trimOps(expr);
-      if (!e || e === "-" || e === "+") return;
+      if (!e || /^[+\-*\/%]$/.test(e)) return;
       try {
         result = toPlain(evaluate(e));
         expr = e;
@@ -899,7 +911,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
     render();
     saveState();
-    if (kbMode) syncKbInput();
   }
 
   function saveState(){ lsSet(STKEY, JSON.stringify({x: expr, c: cur, r: result})); }
@@ -959,7 +970,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     var key = trimOps(expr), body = key.replace(/^[+-]/, "");
     var hasOp = /[+\-*\/%]/.test(body), total = "";
     if (result !== null){ total = result; hasOp = true; }
-    else if (key && key !== "-" && key !== "+"){ try { total = toPlain(evaluate(key)); } catch(ex){ total = ""; } }
+    else if (key && !/^[+\-*\/%]$/.test(key)){ try { total = toPlain(evaluate(key)); } catch(ex){ total = ""; } }
     return {total: total, hasOp: hasOp, value: total !== "" ? total : "0"};
   }
   function render(){
@@ -987,49 +998,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
     if (result !== null) result = null;
     cur = idx; err = ""; render(); saveState();
-    if (kbMode){ syncKbInput(); $("kbInput").focus(); }
-  });
-
-  // ===== फ़ोन कीबोर्ड और कैलकुलेटर कीपैड के बीच स्विच =====
-  function setKbMode(on){
-    kbMode = !!on;
-    $("appRoot").classList.toggle("kb-active", kbMode);
-    $("kbBtn").classList.toggle("on", kbMode);
-    $("kbBtn").setAttribute("aria-pressed", kbMode ? "true" : "false");
-    var inp = $("kbInput");
-    if (kbMode){
-      syncKbInput();
-      inp.focus();
-      try { inp.setSelectionRange(cur, cur); } catch(e){}
-    } else {
-      inp.blur();
-    }
-    render();
-  }
-  $("kbBtn").addEventListener("click", function(){ setKbMode(!kbMode); });
-  $("kbInput").addEventListener("input", function(){
-    var inp = $("kbInput");
-    var raw = String(inp.value || "")
-      .replace(/,/g, ".")
-      .replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–—]/g, "-")
-      .replace(/[०-९]/g, function(d){ return String(d.charCodeAt(0) - 0x0966); })
-      .replace(/[^0-9.+\-*\/%]/g, "");
-    if (raw.length > MAX_LEN) raw = raw.slice(0, MAX_LEN);
-    var pos = typeof inp.selectionStart === "number" ? inp.selectionStart : raw.length;
-    expr = raw;
-    cur = Math.max(0, Math.min(pos, expr.length));
-    result = null;
-    err = "";
-    if (inp.value !== expr){
-      inp.value = expr;
-      try { inp.setSelectionRange(cur, cur); } catch(e){}
-    }
-    render();
-    saveState();
-  });
-  $("kbInput").addEventListener("keydown", function(ev){
-    if (ev.key === "Enter"){ ev.preventDefault(); feedback("="); press("="); }
-    else if (ev.key === "Escape"){ ev.preventDefault(); setKbMode(false); }
   });
 
   // ===== 8. बोलना और कॉपी =====
@@ -1091,6 +1059,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     } catch(e){}
   }
   function closeTopModal(fromPop){
+    if ($("confirmModal").classList.contains("open")){
+      $("confirmModal").classList.remove("open"); confirmCb = null; return true;
+    }
     if ($("pdfOverlay").classList.contains("open")){
       $("pdfOverlay").classList.remove("open");
       if (!fromPop) tryPopModal();
@@ -1106,6 +1077,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
   window.addEventListener("popstate", function(){
     if (ignoringPop > 0){ ignoringPop--; return; }
+    if ($("confirmModal").classList.contains("open")){
+      $("confirmModal").classList.remove("open"); confirmCb = null; return;
+    }
     if ($("pdfOverlay").classList.contains("open")){
       $("pdfOverlay").classList.remove("open");
       return;
@@ -1114,9 +1088,19 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (open) open.classList.remove("open");
   });
 
-  // ===== 9. बिल वाला पन्ना और रजिस्ट्रेशन =====
+  // ===== 9. बिल वाला पन्ना और 10-अंक मोबाइल सीमा =====
   var bill = null, openedFromHistory = false;
   var billSeed = parseInt(lsGet(BSEEDKEY) || "0", 10) || 0;
+
+  function cleanTenDigits(s){ return String(s || "").replace(/\D/g, "").slice(0, 10); }
+  $("billCustomerPhone").addEventListener("input", function(){
+    var v = cleanTenDigits($("billCustomerPhone").value);
+    if ($("billCustomerPhone").value !== v) $("billCustomerPhone").value = v;
+  });
+  $("billSellerPhone").addEventListener("input", function(){
+    var v = String($("billSellerPhone").value || "").replace(/[^0-9, ]/g, "").slice(0, 40);
+    if ($("billSellerPhone").value !== v) $("billSellerPhone").value = v;
+  });
 
   function nextId(){
     var m = Math.floor(Date.now());
@@ -1136,7 +1120,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
   function openBillFromExpr(){
     var e = result !== null ? expr : trimOps(expr), items = [];
-    if (e && e !== "-" && e !== "+"){
+    if (e && !/^[+\-*\/%]$/.test(e)){
       try { items = parseTerms(e); } catch(ex){ toast(t(errKey(ex))); return; }
     }
     var defShop = (regProfile && regProfile.shop) || lsGet(SHOPKEY) || "";
@@ -1151,7 +1135,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     showBill();
   }
   function showBill(){
-    if (kbMode) setKbMode(false);
     $("billShop").value = bill.shop;
     $("billSeller").value = bill.seller;
     $("billSellerPhone").value = bill.sellerPhone || "";
@@ -1186,15 +1169,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       box.appendChild(first);
     }
     bill.items.forEach(function(it, i){
-      var row = el("div", "brow"), left = el("div", "bname-wrap");
-
-      var addBtn = el("button", "addItemBtn", "+"); addBtn.type = "button"; addBtn.setAttribute("aria-label", t("addLine"));
-      addBtn.addEventListener("click", function(){ addBillLine(i + 1); });
-
-      var inp = el("input", "fld bname"); inp.type = "text"; inp.maxLength = 40; inp.autocomplete = "off";
+      var row = el("div", "brow");
+      var inp = el("input", "fld bname"); inp.type = "text"; inp.maxLength = 60; inp.autocomplete = "off";
       inp.placeholder = t("itemPh"); inp.value = it.n || "";
       inp.addEventListener("input", function(){ it.n = inp.value; touchBill(); });
-      left.appendChild(addBtn); left.appendChild(inp);
 
       var num = el("div", "bnum"), line = el("div", "bline");
       var sg = el("button", "bsg" + (it.s === "-" ? " neg" : ""), it.s === "-" ? "−" : "+"); sg.type = "button";
@@ -1219,10 +1197,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       line.appendChild(sg); line.appendChild(amt); num.appendChild(line);
       if (/[^0-9.]/.test(it.x)) num.appendChild(el("small", "", prettyExpr(it.x)));
 
+      var addBtn = el("button", "addItemBtn", "+"); addBtn.type = "button"; addBtn.setAttribute("aria-label", t("addLine"));
+      addBtn.addEventListener("click", function(){ addBillLine(i + 1); });
       var del = el("button", "bdel", "×"); del.type = "button"; del.setAttribute("aria-label", t("remove"));
       del.addEventListener("click", function(){ bill.items.splice(i, 1); touchBill(); renderBill(); });
 
-      row.appendChild(left); row.appendChild(num); row.appendChild(del);
+      row.appendChild(inp); row.appendChild(num); row.appendChild(addBtn); row.appendChild(del);
       box.appendChild(row);
     });
     updateTotals();
@@ -1236,7 +1216,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     bill.seller = ($("billSeller").value || "").trim();
     bill.sellerPhone = ($("billSellerPhone").value || "").trim();
     bill.customer = ($("billCustomer").value || "").trim();
-    bill.customerPhone = ($("billCustomerPhone").value || "").trim();
+    bill.customerPhone = cleanTenDigits($("billCustomerPhone").value);
   }
   function saveBillToHistory(){
     if (!bill || !Array.isArray(bill.items) || !bill.items.length) return;
@@ -1270,33 +1250,32 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("billBtn").addEventListener("click", openBillFromExpr);
   $("billCloseBtn").addEventListener("click", closeBill);
 
-  // ===== 10. PDF: 10 बिल्कुल अलग लेआउट डिज़ाइन + हर पन्ने पर किनारे-से-किनारे कढ़ाई/डिजिटल बॉर्डर + लोगो + नोट =====
+  // ===== 10. PDF: 10 बिल्कुल अलग लेआउट + रिच कढ़ाई/डिजिटल बॉर्डर + लोगो + नोट =====
   var PW = 1240, PH = 1754;
   var FONT = '"Noto Sans Devanagari","Mukta","Segoe UI",Roboto,system-ui,sans-serif';
   var FONT_SERIF = '"Noto Serif Devanagari","Noto Serif",Georgia,"Times New Roman",serif';
   var RED = "#b3261e";
 
-  // 10 पूरी तरह अलग बनावट वाले डिज़ाइन (हेडर, कार्ड, टेबल, टोटल, और लोगो की जगह सब अलग)
   var DESIGNS = [
     {hi:"क्लासिक", en:"Classic", head:"band", cards:"split", thead:"solid", rows:"zebra", total:"rightBox", logoPos:"left", logo:"badge", serif:false,
      c:{primary:"#1d2e58", accent:"#f0a82a", on:"#ffffff", ink:"#14213d", muted:"#667089", line:"#dfe5f0", zebra:"#f6f8fc", paper:"#ffffff", soft:"#eef2fa"}},
-    {hi:"रॉयल", en:"Royal", head:"center", cards:"doubleBox", thead:"double", rows:"clean", total:"centerSeal", logoPos:"center", logo:"crest", serif:true,
-     c:{primary:"#6b1d2a", accent:"#c19a3b", on:"#fff8e7", ink:"#2b1b1e", muted:"#80696c", line:"#e8dbbd", zebra:"#fbf3df", paper:"#fffaf0", soft:"#f7ecd2"}},
+    {hi:"रॉयल", en:"Royal", head:"crown", cards:"royalCrest", thead:"royalBar", rows:"clean", total:"royalSeal", logoPos:"center", logo:"crest", serif:true,
+     c:{primary:"#1f1a17", accent:"#d4af37", on:"#fff9e6", ink:"#1f1a17", muted:"#756754", line:"#e5d5ad", zebra:"#faf4e4", paper:"#fffdf6", soft:"#f5ebd1"}},
     {hi:"एमरल्ड", en:"Emerald", head:"stripe", cards:"pills", thead:"pill", rows:"dots", total:"leftRight", logoPos:"left", logo:"ribbon", serif:false,
      c:{primary:"#0e6b50", accent:"#f2b632", on:"#ffffff", ink:"#0f2a21", muted:"#5b7a6d", line:"#d3e8de", zebra:"#f0f9f4", paper:"#ffffff", soft:"#e3f4ec"}},
-    {hi:"मिनिमल", en:"Minimal", head:"minimal", cards:"plain", thead:"line", rows:"hairline", total:"underline", logoPos:"right", logo:"ink", serif:false,
-     c:{primary:"#111111", accent:"#b08a2e", on:"#ffffff", ink:"#111111", muted:"#6d6d6d", line:"#dcdcdc", zebra:"#fafafa", paper:"#ffffff", soft:"#f1f1f1"}},
+    {hi:"मिनिमल", en:"Minimal", head:"swiss", cards:"swissBar", thead:"swissLine", rows:"hairline", total:"swissBox", logoPos:"right", logo:"ink", serif:false,
+     c:{primary:"#2d3142", accent:"#ef6f6c", on:"#ffffff", ink:"#2d3142", muted:"#6c7288", line:"#e0e3eb", zebra:"#f7f8fb", paper:"#ffffff", soft:"#f0f2f7"}},
     {hi:"सनसेट", en:"Sunset", head:"diag", cards:"stacked", thead:"solid", rows:"boxed", total:"skewLeft", logoPos:"left", logo:"glow", serif:false,
      c:{primary:"#b83b2a", accent:"#ff9f1c", on:"#ffffff", ink:"#2d1410", muted:"#7d5650", line:"#f2d7d2", zebra:"#fff5f2", paper:"#fffcfb", soft:"#fde9e4"}},
     {hi:"इंडिगो", en:"Indigo", head:"side", cards:"topTag", thead:"grid", rows:"grid", total:"banner", logoPos:"right", logo:"tech", serif:false,
      c:{primary:"#2b2d83", accent:"#00b4d8", on:"#ffffff", ink:"#161842", muted:"#5e628f", line:"#d8dbf2", zebra:"#f4f5fc", paper:"#ffffff", soft:"#e8eaf9"}},
-    {hi:"केसरिया", en:"Saffron", head:"arch", cards:"doubleBox", thead:"double", rows:"zebra", total:"centerSeal", logoPos:"center", logo:"gold", serif:true,
+    {hi:"केसरिया", en:"Saffron", head:"arch", cards:"inlineBar", thead:"double", rows:"boxed", total:"floatingCard", logoPos:"center", logo:"gold", serif:true,
      c:{primary:"#8c3b00", accent:"#f59e0b", on:"#fffbeb", ink:"#331a00", muted:"#826040", line:"#f3dec2", zebra:"#fef6e7", paper:"#fffdf7", soft:"#fdebd0"}},
-    {hi:"ओशन", en:"Ocean", head:"wave", cards:"pills", thead:"pill", rows:"clean", total:"floatingCard", logoPos:"left", logo:"wave", serif:false,
+    {hi:"ओशन", en:"Ocean", head:"wave", cards:"split", thead:"pill", rows:"zebra", total:"rightBox", logoPos:"right", logo:"wave", serif:false,
      c:{primary:"#005f73", accent:"#0a9396", on:"#ffffff", ink:"#082a33", muted:"#4c727a", line:"#cde4e8", zebra:"#eff8fa", paper:"#ffffff", soft:"#dff2f5"}},
-    {hi:"स्लेट", en:"Slate", head:"ledger", cards:"inlineBar", thead:"grid", rows:"grid", total:"underline", logoPos:"right", logo:"mono", serif:false,
+    {hi:"स्लेट", en:"Slate", head:"ledger", cards:"topTag", thead:"line", rows:"dots", total:"skewLeft", logoPos:"left", logo:"mono", serif:false,
      c:{primary:"#2b3440", accent:"#3b82f6", on:"#ffffff", ink:"#1e242c", muted:"#647080", line:"#d5dce5", zebra:"#f5f7fa", paper:"#ffffff", soft:"#e8edf3"}},
-    {hi:"उत्सव", en:"Festive", head:"ribbon", cards:"stacked", thead:"solid", rows:"dots", total:"banner", logoPos:"center", logo:"festive", serif:true,
+    {hi:"उत्सव", en:"Festive", head:"ribbon", cards:"pills", thead:"grid", rows:"clean", total:"centerSeal", logoPos:"center", logo:"festive", serif:true,
      c:{primary:"#6a1b6d", accent:"#f4b400", on:"#ffffff", ink:"#2e0d30", muted:"#7a567d", line:"#ecd5ee", zebra:"#fbf2fc", paper:"#fffaff", soft:"#f6e3f8"}}
   ];
 
@@ -1373,78 +1352,243 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     return sx;
   }
 
-  // किनारे-से-किनारे पूरा बॉर्डर + बीच की खाली जगहों में हल्के सजावटी कढ़ाई/डिजिटल मोटिफ़
-  function drawFlowerMotif(g, cx, cy, scale, color, alpha){
-    g.save();
-    g.translate(cx, cy);
-    g.scale(scale, scale);
-    g.globalAlpha = alpha;
-    for (var a = 0; a < 8; a++){
-      g.save(); g.rotate(a * Math.PI / 4);
-      g.beginPath(); g.ellipse(16, 0, 12, 5, 0, 0, Math.PI * 2);
-      g.fillStyle = color; g.fill();
+  // सुंदर, भरी हुई कढ़ाई (Embroidery) बॉर्डर और 6 अनियमित सजावटी आकृतियाँ (फूल, जानवर, फर्नीचर/सजावट)
+  function drawMandalaFlower(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    for (var a = 0; a < 12; a++){
+      g.save(); g.rotate(a * Math.PI / 6);
+      g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(18, -9, 32, 0); g.quadraticCurveTo(18, 9, 0, 0);
+      g.fillStyle = c1; g.fill(); g.restore();
+    }
+    for (var b = 0; b < 8; b++){
+      g.save(); g.rotate(b * Math.PI / 4 + 0.2);
+      g.beginPath(); g.ellipse(12, 0, 9, 4, 0, 0, Math.PI * 2);
+      g.fillStyle = c2; g.fill(); g.restore();
+    }
+    dot(g, 0, 0, 6, c1);
+    g.restore();
+  }
+  function drawButterflyMotif(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    [-1, 1].forEach(function(s){
+      g.beginPath(); g.moveTo(0, -2);
+      g.bezierCurveTo(s * 22, -26, s * 34, -4, s * 14, 4);
+      g.closePath(); g.fillStyle = c1; g.fill();
+      g.beginPath(); g.moveTo(0, 4);
+      g.bezierCurveTo(s * 24, 6, s * 22, 26, s * 4, 14);
+      g.closePath(); g.fillStyle = c2; g.fill();
+      dot(g, s * 16, -8, 3.5, c2);
+    });
+    rr(g, -2.5, -14, 5, 28, 2.5); g.fillStyle = c1; g.fill();
+    g.strokeStyle = c1; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(0, -14); g.quadraticCurveTo(-6, -24, -10, -22); g.stroke();
+    g.beginPath(); g.moveTo(0, -14); g.quadraticCurveTo(6, -24, 10, -22); g.stroke();
+    g.restore();
+  }
+  function drawElephantMotif(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    g.fillStyle = c1;
+    // शरीर, पैर और सिर
+    rr(g, -22, -12, 34, 22, 10); g.fill();
+    g.fillRect(-18, 6, 7, 14); g.fillRect(-5, 6, 7, 14); g.fillRect(6, 6, 7, 14);
+    g.beginPath(); g.arc(14, -4, 11, 0, Math.PI * 2); g.fill();
+    // सूँड़ व कान
+    g.lineWidth = 5; g.strokeStyle = c1; g.lineCap = "round";
+    g.beginPath(); g.moveTo(22, -2); g.quadraticCurveTo(30, 6, 24, 16); g.stroke();
+    g.fillStyle = c2;
+    g.beginPath(); g.ellipse(9, -4, 6, 9, -0.2, 0, Math.PI * 2); g.fill();
+    // सजावटी झूल
+    rr(g, -16, -12, 20, 12, 4); g.fillStyle = c2; g.fill();
+    dot(g, -6, -6, 2.5, c1);
+    g.restore();
+  }
+  function drawPeacockMotif(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    // पंख
+    for (var i = -3; i <= 3; i++){
+      g.save(); g.rotate(i * 0.28);
+      g.beginPath(); g.ellipse(0, -20, 5, 16, 0, 0, Math.PI * 2); g.fillStyle = c2; g.fill();
+      dot(g, 0, -28, 3, c1);
       g.restore();
     }
-    dot(g, 0, 0, 6, color);
+    // शरीर और गर्दन
+    g.fillStyle = c1;
+    g.beginPath(); g.ellipse(0, 6, 9, 13, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.moveTo(-3, -4); g.quadraticCurveTo(4, -18, 12, -16); g.quadraticCurveTo(10, -8, 4, 2); g.fill();
+    dot(g, 13, -16, 4, c1);
     g.restore();
   }
-  function drawPageDecor(g, pageIdx, seed, C){
-    var pat = (pageIdx + seed) % 6;
+  function drawDeerFaceMotif(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    // सींग
+    g.strokeStyle = c2; g.lineWidth = 2.6; g.lineCap = "round";
+    [-1, 1].forEach(function(s){
+      g.beginPath(); g.moveTo(s * 6, -10); g.quadraticCurveTo(s * 16, -24, s * 22, -32); g.stroke();
+      g.beginPath(); g.moveTo(s * 13, -20); g.lineTo(s * 8, -28); g.stroke();
+      g.beginPath(); g.moveTo(s * 17, -25); g.lineTo(s * 24, -24); g.stroke();
+      g.beginPath(); g.ellipse(s * 14, -7, 7, 3.5, s * -0.4, 0, Math.PI * 2); g.fillStyle = c2; g.fill();
+    });
+    // चेहरा
+    g.fillStyle = c1;
+    g.beginPath(); g.moveTo(-10, -10); g.lineTo(10, -10); g.lineTo(5, 14); g.lineTo(0, 18); g.lineTo(-5, 14); g.closePath(); g.fill();
+    dot(g, 0, 14, 2.5, c2);
+    g.restore();
+  }
+  function drawRoyalChairMotif(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    g.strokeStyle = c1; g.fillStyle = c1; g.lineWidth = 2.5;
+    // शाही कुर्सी / फर्नीचर आकृति
+    rr(g, -13, -26, 26, 26, 8); g.stroke();
+    rr(g, -8, -21, 16, 16, 5); g.fillStyle = c2; g.fill();
+    g.fillStyle = c1; rr(g, -16, 0, 32, 7, 3); g.fill();
+    g.fillRect(-13, 7, 4, 16); g.fillRect(9, 7, 4, 16);
+    g.fillRect(-16, -10, 4, 11); g.fillRect(12, -10, 4, 11);
+    g.restore();
+  }
+  function drawKalashDiyaMotif(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    // कलश व दीया सजावट
+    g.fillStyle = c1;
+    g.beginPath(); g.ellipse(0, 8, 16, 13, 0, 0, Math.PI * 2); g.fill();
+    rr(g, -9, -8, 18, 7, 3); g.fillStyle = c2; g.fill();
+    g.fillStyle = c2;
+    g.beginPath(); g.moveTo(0, -28); g.quadraticCurveTo(9, -17, 0, -10); g.quadraticCurveTo(-9, -17, 0, -28); g.fill();
+    g.fillStyle = c1;
+    [-1, 1].forEach(function(s){
+      g.beginPath(); g.moveTo(s * 6, -8); g.quadraticCurveTo(s * 20, -18, s * 22, -6); g.quadraticCurveTo(s * 14, -4, s * 6, -8); g.fill();
+    });
+    g.restore();
+  }
+  function drawLeafPaisleyMotif(g, cx, cy, scale, c1, c2, alpha){
+    g.save(); g.translate(cx, cy); g.scale(scale, scale); g.globalAlpha = alpha;
+    g.fillStyle = c1;
+    g.beginPath(); g.moveTo(0, -24); g.bezierCurveTo(22, -14, 24, 18, 0, 22);
+    g.bezierCurveTo(-18, 22, -20, -2, -4, -12); g.quadraticCurveTo(4, -18, 0, -24); g.fill();
+    dot(g, 1, 5, 6, c2);
+    g.restore();
+  }
+
+  function drawPageDecor(g, pageIdx, seed, C, designIdx){
+    var dIdx = designIdx || 0;
+    var pat = (pageIdx + dIdx) % 6;
     g.save();
-    // 1. पन्ने के बिल्कुल किनारे तक पूरा बॉर्डर
+    // बाहरी दोहरी सिलाई-कढ़ाई फ़्रेम (सभी बॉर्डर में गहराई के लिए)
+    g.strokeStyle = C.primary; g.globalAlpha = 0.35; g.lineWidth = 2.5;
+    g.strokeRect(8, 8, PW - 16, PH - 16);
+    g.save(); g.setLineDash([8, 6]);
+    g.strokeStyle = C.accent; g.globalAlpha = 0.72; g.lineWidth = 2;
+    g.strokeRect(20, 20, PW - 40, PH - 40);
+    g.restore();
+
     if (pat === 0){
-      // फूल-पत्तियों और लता वाला किनारा बॉर्डर
-      g.strokeStyle = C.accent; g.globalAlpha = 0.55; g.lineWidth = 3;
-      g.strokeRect(10, 10, PW - 20, PH - 20);
-      for (var x = 60; x < PW - 40; x += 120){ drawFlowerMotif(g, x, 14, 0.55, C.accent, 0.55); drawFlowerMotif(g, x, PH - 14, 0.55, C.accent, 0.55); }
-      for (var y = 80; y < PH - 60; y += 140){ drawFlowerMotif(g, 14, y, 0.55, C.primary, 0.35); drawFlowerMotif(g, PW - 14, y, 0.55, C.primary, 0.35); }
+      // फूल-लता और कढ़ाई बेल बॉर्डर
+      g.strokeStyle = C.accent; g.globalAlpha = 0.55; g.lineWidth = 2.2;
+      g.beginPath(); for (var x = 24; x <= PW - 24; x += 12) g.lineTo(x, 14 + Math.sin(x * 0.09) * 5); g.stroke();
+      g.beginPath(); for (var x2 = 24; x2 <= PW - 24; x2 += 12) g.lineTo(x2, PH - 14 + Math.sin(x2 * 0.09) * 5); g.stroke();
+      g.beginPath(); for (var y = 24; y <= PH - 24; y += 12) g.lineTo(14 + Math.sin(y * 0.09) * 5, y); g.stroke();
+      g.beginPath(); for (var y2 = 24; y2 <= PH - 24; y2 += 12) g.lineTo(PW - 14 + Math.sin(y2 * 0.09) * 5, y2); g.stroke();
+      for (var fx = 72; fx < PW - 60; fx += 76){ drawMandalaFlower(g, fx, 14, 0.38, C.accent, C.primary, 0.7); drawMandalaFlower(g, fx, PH - 14, 0.38, C.accent, C.primary, 0.7); }
+      for (var fy = 76; fy < PH - 60; fy += 84){ drawMandalaFlower(g, 14, fy, 0.36, C.primary, C.accent, 0.55); drawMandalaFlower(g, PW - 14, fy, 0.36, C.primary, C.accent, 0.55); }
+      [[30,30],[PW-30,30],[30,PH-30],[PW-30,PH-30]].forEach(function(pt){ drawMandalaFlower(g, pt[0], pt[1], 0.85, C.accent, C.primary, 0.78); });
     } else if (pat === 1){
-      // कढ़ाई (Embroidery Scallop) पूरा किनारा
-      g.strokeStyle = C.primary; g.globalAlpha = 0.25; g.lineWidth = 3;
-      for (var sx = 0; sx < PW; sx += 40){ g.beginPath(); g.arc(sx + 20, 4, 20, 0, Math.PI); g.stroke(); g.beginPath(); g.arc(sx + 20, PH - 4, 20, Math.PI, Math.PI * 2); g.stroke(); }
-      for (var sy = 0; sy < PH; sy += 40){ g.beginPath(); g.arc(4, sy + 20, 20, -Math.PI / 2, Math.PI / 2); g.stroke(); g.beginPath(); g.arc(PW - 4, sy + 20, 20, Math.PI / 2, 1.5 * Math.PI); g.stroke(); }
+      // दोहरा कंगूरा लेस और मोती कढ़ाई बॉर्डर
+      g.strokeStyle = C.primary; g.globalAlpha = 0.45; g.lineWidth = 2.5;
+      for (var sx = 12; sx < PW - 12; sx += 28){
+        g.beginPath(); g.arc(sx + 14, 6, 14, 0, Math.PI); g.stroke();
+        g.beginPath(); g.arc(sx + 14, PH - 6, 14, Math.PI, Math.PI * 2); g.stroke();
+        dot(g, sx + 14, 14, 2.8, C.accent); dot(g, sx + 14, PH - 14, 2.8, C.accent);
+      }
+      for (var sy = 12; sy < PH - 12; sy += 28){
+        g.beginPath(); g.arc(6, sy + 14, 14, -Math.PI / 2, Math.PI / 2); g.stroke();
+        g.beginPath(); g.arc(PW - 6, sy + 14, 14, Math.PI / 2, 1.5 * Math.PI); g.stroke();
+        dot(g, 14, sy + 14, 2.8, C.accent); dot(g, PW - 14, sy + 14, 2.8, C.accent);
+      }
+      [[28,28],[PW-28,28],[28,PH-28],[PW-28,PH-28]].forEach(function(pt){ drawMandalaFlower(g, pt[0], pt[1], 0.78, C.primary, C.accent, 0.65); });
     } else if (pat === 2){
-      // ज़िग-ज़ैग कट किनारा
-      g.strokeStyle = C.accent; g.globalAlpha = 0.55; g.lineWidth = 3;
-      g.beginPath(); for (var zx = 0; zx <= PW; zx += 24) g.lineTo(zx, (zx / 24) % 2 === 0 ? 6 : 20); g.stroke();
-      g.beginPath(); for (var zx2 = 0; zx2 <= PW; zx2 += 24) g.lineTo(zx2, PH - ((zx2 / 24) % 2 === 0 ? 6 : 20)); g.stroke();
-      g.beginPath(); for (var zy = 0; zy <= PH; zy += 24) g.lineTo((zy / 24) % 2 === 0 ? 6 : 20, zy); g.stroke();
-      g.beginPath(); for (var zy2 = 0; zy2 <= PH; zy2 += 24) g.lineTo(PW - ((zy2 / 24) % 2 === 0 ? 6 : 20), zy2); g.stroke();
+      // ज़रदोज़ी क्रॉस-जाली और हीरा कढ़ाई बॉर्डर
+      g.strokeStyle = C.accent; g.globalAlpha = 0.65; g.lineWidth = 2.2;
+      for (var zx = 20; zx < PW - 28; zx += 28){
+        g.beginPath(); g.moveTo(zx, 6); g.lineTo(zx + 14, 22); g.lineTo(zx + 28, 6); g.stroke();
+        g.beginPath(); g.moveTo(zx, 22); g.lineTo(zx + 14, 6); g.lineTo(zx + 28, 22); g.stroke();
+        g.beginPath(); g.moveTo(zx, PH - 6); g.lineTo(zx + 14, PH - 22); g.lineTo(zx + 28, PH - 6); g.stroke();
+        g.beginPath(); g.moveTo(zx, PH - 22); g.lineTo(zx + 14, PH - 6); g.lineTo(zx + 28, PH - 22); g.stroke();
+        diamond(g, zx + 14, 14, 4, C.primary); diamond(g, zx + 14, PH - 14, 4, C.primary);
+      }
+      for (var zy = 20; zy < PH - 28; zy += 28){
+        g.beginPath(); g.moveTo(6, zy); g.lineTo(22, zy + 14); g.lineTo(6, zy + 28); g.stroke();
+        g.beginPath(); g.moveTo(22, zy); g.lineTo(6, zy + 14); g.lineTo(22, zy + 28); g.stroke();
+        g.beginPath(); g.moveTo(PW - 6, zy); g.lineTo(PW - 22, zy + 14); g.lineTo(PW - 6, zy + 28); g.stroke();
+        g.beginPath(); g.moveTo(PW - 22, zy); g.lineTo(PW - 6, zy + 14); g.lineTo(PW - 22, zy + 28); g.stroke();
+        diamond(g, 14, zy + 14, 4, C.primary); diamond(g, PW - 14, zy + 14, 4, C.primary);
+      }
     } else if (pat === 3){
-      // डिजिटल जियोमेट्रिक किनारा
-      g.strokeStyle = C.primary; g.globalAlpha = 0.25; g.lineWidth = 4; g.strokeRect(8, 8, PW - 16, PH - 16);
-      g.fillStyle = C.accent; g.globalAlpha = 0.45;
-      for (var dx = 20; dx < PW - 20; dx += 80){ g.fillRect(dx, 6, 22, 8); g.fillRect(dx, PH - 14, 22, 8); }
-      for (var dy = 20; dy < PH - 20; dy += 80){ g.fillRect(6, dy, 8, 22); g.fillRect(PW - 14, dy, 8, 22); }
+      // ज्योमेट्रिक कढ़ाई पट्टी और मोती
+      g.strokeStyle = C.primary; g.globalAlpha = 0.45; g.lineWidth = 2;
+      for (var gx = 26; gx < PW - 44; gx += 36){
+        g.strokeRect(gx, 9, 22, 10); g.strokeRect(gx, PH - 19, 22, 10);
+        dot(g, gx + 29, 14, 3, C.accent); dot(g, gx + 29, PH - 14, 3, C.accent);
+      }
+      for (var gy = 26; gy < PH - 44; gy += 36){
+        g.strokeRect(9, gy, 10, 22); g.strokeRect(PW - 19, gy, 10, 22);
+        dot(g, 14, gy + 29, 3, C.accent); dot(g, PW - 14, gy + 29, 3, C.accent);
+      }
+      [[28,28],[PW-28,28],[28,PH-28],[PW-28,PH-28]].forEach(function(pt){ diamond(g, pt[0], pt[1], 12, C.accent); });
     } else if (pat === 4){
-      // मोती-लड़ी पूरा किनारा
-      for (var px = 14; px <= PW - 14; px += 28){ dot(g, px, 12, 4, C.accent); dot(g, px, PH - 12, 4, C.accent); }
-      for (var py = 36; py <= PH - 36; py += 28){ dot(g, 12, py, 4, C.primary); dot(g, PW - 12, py, 4, C.primary); }
+      // मुगल मेहराब और पैस्ले कढ़ाई बॉर्डर
+      g.strokeStyle = C.accent; g.globalAlpha = 0.58; g.lineWidth = 2.2;
+      for (var mx = 26; mx < PW - 38; mx += 32){
+        g.beginPath(); g.moveTo(mx, 22); g.quadraticCurveTo(mx + 16, 4, mx + 32, 22); g.stroke();
+        g.beginPath(); g.moveTo(mx, PH - 22); g.quadraticCurveTo(mx + 16, PH - 4, mx + 32, PH - 22); g.stroke();
+        dot(g, mx + 16, 15, 2.8, C.primary); dot(g, mx + 16, PH - 15, 2.8, C.primary);
+      }
+      for (var my = 26; my < PH - 38; my += 32){
+        g.beginPath(); g.moveTo(22, my); g.quadraticCurveTo(4, my + 16, 22, my + 32); g.stroke();
+        g.beginPath(); g.moveTo(PW - 22, my); g.quadraticCurveTo(PW - 4, my + 16, PW - 22, my + 32); g.stroke();
+        dot(g, 15, my + 16, 2.8, C.primary); dot(g, PW - 15, my + 16, 2.8, C.primary);
+      }
+      [[30,30],[PW-30,30],[30,PH-30],[PW-30,PH-30]].forEach(function(pt){ drawMandalaFlower(g, pt[0], pt[1], 0.8, C.accent, C.primary, 0.7); });
     } else {
-      // दोहरी शाही लकीर किनारा
-      g.strokeStyle = C.accent; g.globalAlpha = 0.6; g.lineWidth = 4; g.strokeRect(8, 8, PW - 16, PH - 16);
-      g.strokeStyle = C.primary; g.globalAlpha = 0.25; g.lineWidth = 2; g.strokeRect(18, 18, PW - 36, PH - 36);
+      // शाही ज़री-बूटी बॉर्डर
+      g.strokeStyle = C.primary; g.globalAlpha = 0.35; g.lineWidth = 1.6;
+      g.strokeRect(14, 14, PW - 28, PH - 28);
+      for (var kx = 42; kx < PW - 42; kx += 48){
+        drawLeafPaisleyMotif(g, kx, 14, 0.36, C.accent, C.primary, 0.65);
+        drawLeafPaisleyMotif(g, kx, PH - 14, 0.36, C.accent, C.primary, 0.65);
+      }
+      for (var ky = 42; ky < PH - 42; ky += 54){
+        drawLeafPaisleyMotif(g, 14, ky, 0.36, C.primary, C.accent, 0.55);
+        drawLeafPaisleyMotif(g, PW - 14, ky, 0.36, C.primary, C.accent, 0.55);
+      }
+      [[32,32],[PW-32,32],[32,PH-32],[PW-32,PH-32]].forEach(function(pt){ drawMandalaFlower(g, pt[0], pt[1], 0.9, C.primary, C.accent, 0.65); });
     }
 
-    // 2. पन्ने की खाली जगहों में बीच-बीच में हल्के सजावटी मोटिफ़ (पूरे पन्ने पर नहीं, कहीं-कहीं)
-    if (pat % 2 === 0){
-      drawFlowerMotif(g, PW * 0.22, PH * 0.52, 2.6, C.accent, 0.055);
-      drawFlowerMotif(g, PW * 0.78, PH * 0.74, 2.2, C.primary, 0.045);
-    } else {
-      g.strokeStyle = C.primary; g.globalAlpha = 0.045; g.lineWidth = 3;
-      g.beginPath(); g.arc(PW * 0.2, PH * 0.65, 95, 0, Math.PI * 2); g.stroke();
-      g.beginPath(); g.arc(PW * 0.2, PH * 0.65, 65, 0, Math.PI * 2); g.stroke();
-      g.strokeStyle = C.accent; g.globalAlpha = 0.06;
-      g.beginPath(); g.moveTo(PW * 0.76, PH * 0.45 - 60); g.lineTo(PW * 0.76 + 60, PH * 0.45);
-      g.lineTo(PW * 0.76, PH * 0.45 + 60); g.lineTo(PW * 0.76 - 60, PH * 0.45); g.closePath(); g.stroke();
+    // पन्ने के भीतर 6 बिखरी हुई अनियमित आकृतियाँ (आमने-सामने नहीं, हर डिज़ाइन पर अलग-अलग मिश्रण)
+    var MOTIFS = [
+      drawMandalaFlower, drawButterflyMotif, drawElephantMotif,
+      drawPeacockMotif, drawDeerFaceMotif, drawRoyalChairMotif,
+      drawKalashDiyaMotif, drawLeafPaisleyMotif
+    ];
+    var spots = [
+      [0.16, 0.32, 1.35],
+      [0.79, 0.40, 1.25],
+      [0.27, 0.55, 1.55],
+      [0.84, 0.64, 1.30],
+      [0.15, 0.77, 1.40],
+      [0.63, 0.85, 1.35]
+    ];
+    for (var m = 0; m < 6; m++){
+      var fn = MOTIFS[(dIdx * 3 + seed + pageIdx * 5 + m * 3) % MOTIFS.length];
+      var jx = ((((seed + dIdx) * 7 + m * 19) % 44) - 22);
+      var jy = ((((seed + dIdx) * 11 + m * 23) % 44) - 22);
+      var cA = (m % 2 === 0) ? C.accent : C.primary;
+      var cB = (m % 2 === 0) ? C.primary : C.accent;
+      fn(g, PW * spots[m][0] + jx, PH * spots[m][1] + jy, spots[m][2], cA, cB, 0.09);
     }
     g.restore();
   }
 
-  // लोगो आइकन + उसके ठीक नीचे स्टाइलिश तिरछा "Billing Calculator" नाम (अलग-अलग जगह और स्टाइल में)
   function drawAppLogoAndTitle(g, cx, y, D){
     var C = D.c;
-    // 1. कैलकुलेटर + बिल रसीद वाला लोगो
     g.save();
     rr(g, cx - 24, y - 62, 48, 48, 12); g.fillStyle = C.primary; g.fill();
     g.strokeStyle = C.accent; g.lineWidth = 2; g.stroke();
@@ -1456,7 +1600,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
     g.restore();
 
-    // 2. लोगो के ठीक नीचे थोड़ा टेढ़ा व स्टाइलिश "Billing Calculator" नाम
     g.save();
     g.translate(cx, y + 6);
     g.rotate(-0.045);
@@ -1489,15 +1632,63 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     if (!st) return;
     g.save();
     g.translate(x, y);
-    g.rotate(-0.03);
-    rr(g, 0, 0, 280, 126, 14); g.fillStyle = st.bg; g.fill();
-    g.strokeStyle = st.accent; g.lineWidth = 4; g.stroke();
-    rr(g, 10, 10, 260, 106, 9); g.strokeStyle = st.fg; g.globalAlpha = 0.45; g.lineWidth = 1.5; g.stroke();
+    g.rotate(-0.015);
+
+    // छोटा, साफ़ और असली-सा दिखने वाला Specimen नोट (बिना किसी अजीब चेहरे या सिक्के के)
+    g.fillStyle = "rgba(0,0,0,0.10)";
+    rr(g, 3, 4, 196, 88, 8); g.fill();
+    var ng = g.createLinearGradient(0, 0, 196, 88);
+    ng.addColorStop(0, st.bg); ng.addColorStop(0.55, st.bg); ng.addColorStop(1, st.accent);
+    rr(g, 0, 0, 196, 88, 8); g.fillStyle = ng; g.fill();
+    g.strokeStyle = st.accent; g.lineWidth = 2.4; g.stroke();
+
+    // बारीक सुरक्षा फ़्रेम और गिलॉश लहरें
+    rr(g, 5, 5, 186, 78, 5); g.strokeStyle = st.fg; g.globalAlpha = 0.55; g.lineWidth = 1; g.stroke();
+    g.globalAlpha = 0.16; g.strokeStyle = "#ffffff"; g.lineWidth = 1;
+    for (var w = 0; w < 4; w++){
+      g.beginPath();
+      for (var wx = 7; wx <= 189; wx += 8){
+        var wy = 19 + w * 15 + Math.sin(wx * 0.11 + w) * 3.5;
+        if (wx === 7) g.moveTo(wx, wy); else g.lineTo(wx, wy);
+      }
+      g.stroke();
+    }
+
+    // ऊर्ध्वाधर मेटैलिक सुरक्षा पट्टी
+    g.globalAlpha = 0.65;
+    for (var sy = 9; sy < 79; sy += 10){
+      g.fillStyle = sy % 20 === 9 ? "#ffffff" : st.accent;
+      g.fillRect(114, sy, 3, 6);
+    }
+
+    // बाईं ओर हल्का वॉटरमार्क और अशोक चक्र जैसा रोसेट प्रतीक
+    g.globalAlpha = 0.20;
+    g.beginPath(); g.ellipse(42, 45, 22, 26, 0, 0, Math.PI * 2); g.fillStyle = "#ffffff"; g.fill();
+    g.globalAlpha = 0.78; g.strokeStyle = st.fg; g.lineWidth = 1.1;
+    g.beginPath(); g.arc(88, 45, 11, 0, Math.PI * 2); g.stroke();
+    for (var sp = 0; sp < 12; sp++){
+      var ang = sp * Math.PI / 6;
+      g.beginPath(); g.moveTo(88, 45); g.lineTo(88 + Math.cos(ang) * 10, 45 + Math.sin(ang) * 10); g.stroke();
+    }
+
+    // दाईं ओर सजीला ज्योमेट्रिक नोट मेडैलियन (रुपये के चिह्न के साथ)
+    g.globalAlpha = 0.9;
+    g.beginPath(); g.arc(154, 44, 24, 0, Math.PI * 2);
+    g.fillStyle = "rgba(255,255,255,0.16)"; g.fill();
+    g.strokeStyle = st.fg; g.lineWidth = 1.4; g.stroke();
+    g.beginPath(); g.arc(154, 44, 18, 0, Math.PI * 2);
+    g.strokeStyle = st.accent; g.lineWidth = 1; g.stroke();
+    g.fillStyle = st.fg; g.textAlign = "center"; g.font = "800 15px " + FONT_SERIF;
+    g.fillText("₹" + val, 154, 49);
+    g.textAlign = "left";
+
+    // कोने का मूल्य, सीरियल नंबर और SPECIMEN लेबल
     g.globalAlpha = 1;
-    dot(g, 215, 63, 36, "rgba(255,255,255,0.14)");
-    dot(g, 215, 63, 22, "rgba(255,255,255,0.12)");
-    g.fillStyle = st.fg; g.font = "800 44px " + FONT; g.fillText("₹" + val, 22, 70);
-    g.font = "700 15px " + FONT; g.fillStyle = st.accent; g.fillText("BILLING NOTE", 24, 98);
+    g.fillStyle = st.fg; g.font = "800 20px " + FONT_SERIF; g.fillText("₹" + val, 11, 26);
+    g.font = "700 8.5px " + FONT; g.fillStyle = st.accent; g.fillText("SPECIMEN", 11, 77);
+    g.textAlign = "right"; g.fillStyle = st.fg; g.font = "600 9px " + FONT;
+    g.fillText("BC 000" + val, 185, 77);
+    g.textAlign = "left";
     g.restore();
   }
 
@@ -1527,7 +1718,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       var cv = document.createElement("canvas"); cv.width = PW; cv.height = PH;
       var g = cv.getContext("2d"); g.fillStyle = C.paper; g.fillRect(0, 0, PW, PH);
       g.textBaseline = "alphabetic"; g.textAlign = "left";
-      drawPageDecor(g, idx, info.seed, C);
+      drawPageDecor(g, idx, info.seed, C, pdfDesign);
       var p = {cv: cv, g: g}; pages.push(p); return p;
     }
     function dateRight(g, x, y1, y2, c1, c2){
@@ -1536,13 +1727,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
     function headFirst(g){
       var h = D.head;
-      if (h === "band" || h === "diag" || h === "ribbon"){
+      if (h === "band" || h === "diag"){
         g.fillStyle = C.primary; g.fillRect(24, 24, PW - 48, 212);
         if (h === "diag"){
           g.fillStyle = C.accent; g.beginPath(); g.moveTo(24, 236); g.lineTo(PW - 24, 198); g.lineTo(PW - 24, 244); g.lineTo(24, 244); g.closePath(); g.fill();
-        } else if (h === "ribbon"){
-          stripes(g, 24, 24, PW - 48, 212, 44, "rgba(255,255,255,0.07)");
-          g.fillStyle = C.accent; g.fillRect(24, 236, PW - 48, 10);
         } else {
           dot(g, PW - 90, 40, 170, "rgba(255,255,255,0.06)");
           g.fillStyle = C.accent; g.fillRect(24, 236, PW - 48, 8);
@@ -1551,8 +1739,30 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         dateRight(g, PW - M, 110, 152, C.on, "rgba(255,255,255,0.85)");
         return 276;
       }
-      if (h === "stripe" || h === "wave"){
-        rr(g, M, 56, W, 194, h === "wave" ? 48 : 24); g.fillStyle = C.primary; g.fill();
+      if (h === "ribbon"){
+        // उत्सव रिबन बैनर (मुड़े किनारों के साथ)
+        rr(g, M - 16, 60, W + 32, 168, 18); g.fillStyle = C.primary; g.fill();
+        g.strokeStyle = C.accent; g.lineWidth = 4; g.stroke();
+        g.fillStyle = C.accent;
+        g.beginPath(); g.moveTo(M - 16, 228); g.lineTo(M + 14, 228); g.lineTo(M + 14, 248); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(PW - M + 16, 228); g.lineTo(PW - M - 14, 228); g.lineTo(PW - M - 14, 248); g.closePath(); g.fill();
+        g.fillStyle = C.on; fitFont(g, title, 800, 54, 30, W - 450, HF); g.fillText(clip(g, title, W - 450), M + 24, 148);
+        dateRight(g, PW - M - 24, 130, 172, C.on, "rgba(255,255,255,0.85)");
+        return 276;
+      }
+      if (h === "wave"){
+        // लहरदार ओशन हेडर
+        g.fillStyle = C.primary;
+        g.beginPath(); g.moveTo(24, 24); g.lineTo(PW - 24, 24); g.lineTo(PW - 24, 204);
+        g.bezierCurveTo(PW * 0.72, 260, PW * 0.32, 152, 24, 224); g.closePath(); g.fill();
+        g.strokeStyle = C.accent; g.lineWidth = 6;
+        g.beginPath(); g.moveTo(24, 224); g.bezierCurveTo(PW * 0.32, 152, PW * 0.72, 260, PW - 24, 204); g.stroke();
+        g.fillStyle = C.on; fitFont(g, title, 800, 54, 30, W - 430, HF); g.fillText(clip(g, title, W - 430), M, 128);
+        dateRight(g, PW - M, 110, 152, C.on, "rgba(255,255,255,0.85)");
+        return 276;
+      }
+      if (h === "stripe"){
+        rr(g, M, 56, W, 194, 24); g.fillStyle = C.primary; g.fill();
         stripes(g, M + 16, 72, W - 32, 162, 36, "rgba(255,255,255,0.08)");
         g.fillStyle = C.on; fitFont(g, title, 800, 54, 30, W - 470, HF); g.fillText(clip(g, title, W - 470), M + 42, 150);
         dateRight(g, PW - M - 42, 132, 176, C.on, "rgba(255,255,255,0.85)");
@@ -1581,6 +1791,31 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         g.fillStyle = C.primary; fitFont(g, title, 800, 52, 28, W - 460, HF); g.fillText(clip(g, title, W - 460), M + 28, 144);
         dateRight(g, PW - M - 28, 118, 162, C.ink, C.muted);
         return 244;
+      }
+      if (h === "crown"){
+        // रॉयल ताज और शाही फ़्रेम हेडर
+        var cx2 = PW / 2;
+        rr(g, M, 50, W, 210, 20); g.fillStyle = C.primary; g.fill();
+        rr(g, M + 8, 58, W - 16, 194, 14); g.strokeStyle = C.accent; g.lineWidth = 2.5; g.stroke();
+        // ताज आकृति
+        g.fillStyle = C.accent;
+        g.beginPath(); g.moveTo(cx2 - 34, 102); g.lineTo(cx2 - 28, 76); g.lineTo(cx2 - 12, 92);
+        g.lineTo(cx2, 70); g.lineTo(cx2 + 12, 92); g.lineTo(cx2 + 28, 76); g.lineTo(cx2 + 34, 102); g.closePath(); g.fill();
+        g.textAlign = "center"; g.fillStyle = C.on; fitFont(g, title, 800, 56, 30, W - 100, HF);
+        g.fillText(clip(g, title, W - 100), cx2, 168);
+        g.fillStyle = C.accent; g.font = "600 24px " + FONT;
+        g.fillText(wp.date + "  ✦  " + wp.time, cx2, 220); g.textAlign = "left";
+        return 292;
+      }
+      if (h === "swiss"){
+        // मिनिमल स्विस ग्रिड हेडर
+        g.fillStyle = C.accent; g.fillRect(M, 66, 22, 148);
+        g.fillStyle = C.ink; fitFont(g, title, 800, 62, 32, W - 470, HF); g.fillText(clip(g, title, W - 470), M + 42, 138);
+        g.fillStyle = C.muted; g.font = "700 21px " + FONT; spaced(g, L.bill, M + 42, 186, 5, "left");
+        rr(g, PW - M - 370, 80, 370, 92, 16); g.fillStyle = C.soft; g.fill();
+        dateRight(g, PW - M - 24, 120, 156, C.ink, C.accent);
+        hline(g, M, PW - M, 232, C.line, 2);
+        return 264;
       }
       g.fillStyle = C.accent; g.fillRect(M, 72, 96, 8);
       g.fillStyle = C.ink; fitFont(g, title, 700, 64, 34, W - 440, HF); g.fillText(clip(g, title, W - 440), M, 172);
@@ -1634,6 +1869,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         } else if (D.cards === "topTag"){
           g.fillStyle = C.zebra; g.fillRect(x, y0, cw, h);
           g.fillStyle = C.primary; g.fillRect(x, y0, cw, 8);
+        } else if (D.cards === "royalCrest"){
+          rr(g, x, y0, cw, h, 14); g.fillStyle = C.soft; g.fill();
+          g.strokeStyle = C.accent; g.lineWidth = 2.5; g.stroke();
+          diamond(g, x + cw - 20, y0 + 20, 7, C.accent);
+        } else if (D.cards === "swissBar"){
+          g.fillStyle = C.soft; g.fillRect(x, y0, cw, h);
+          g.fillStyle = C.accent; g.fillRect(x, y0, 10, h);
         } else {
           rr(g, x, y0, cw, h, 16); g.fillStyle = C.zebra; g.fill(); g.strokeStyle = C.line; g.lineWidth = 2; g.stroke();
           g.fillStyle = C.accent; g.fillRect(x, y0 + 22, 6, 68);
@@ -1645,16 +1887,19 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       return y0 + h + 28;
     }
     function tHead(g, y0){
-      if (D.thead === "solid" || D.thead === "pill"){
-        rr(g, M, y0, W, 62, D.thead === "pill" ? 31 : 12); g.fillStyle = C.primary; g.fill();
+      if (D.thead === "solid" || D.thead === "pill" || D.thead === "royalBar"){
+        rr(g, M, y0, W, 62, D.thead === "pill" ? 31 : (D.thead === "royalBar" ? 8 : 12)); g.fillStyle = C.primary; g.fill();
+        if (D.thead === "royalBar"){ hline(g, M + 12, M + W - 12, y0 + 5, C.accent, 2.5); hline(g, M + 12, M + W - 12, y0 + 57, C.accent, 2.5); }
       } else if (D.thead === "double"){
         hline(g, M, M + W, y0 + 4, C.accent, 3); hline(g, M, M + W, y0 + 60, C.primary, 3);
+      } else if (D.thead === "swissLine"){
+        hline(g, M, M + W, y0 + 4, C.accent, 4); hline(g, M, M + W, y0 + 60, C.ink, 2);
       } else if (D.thead === "grid"){
         g.fillStyle = C.soft; g.fillRect(M, y0, W, 62); g.strokeStyle = C.primary; g.lineWidth = 2; g.strokeRect(M, y0, W, 62);
       } else {
         hline(g, M, M + W, y0 + 62, C.ink, 3);
       }
-      g.fillStyle = (D.thead === "solid" || D.thead === "pill") ? C.on : C.ink;
+      g.fillStyle = (D.thead === "solid" || D.thead === "pill" || D.thead === "royalBar") ? C.on : C.ink;
       g.font = "700 23px " + FONT; g.textAlign = "left";
       g.fillText("#", COL.n, y0 + 40); g.fillText(L.item, COL.item, y0 + 40);
       g.textAlign = "right"; g.fillText(L.amount, COL.amt, y0 + 40); g.textAlign = "left";
@@ -1682,7 +1927,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
       g.fillText((neg ? "− " : "") + shown, COL.amt, y0 + 50); g.textAlign = "left";
     }
     function totals(g, y0){
-      var bw = 620, bh = 158, x = (D.total === "centerSeal") ? (PW - bw) / 2 : (D.total === "leftRight" || D.total === "banner" ? M : PW - M - bw);
+      var bw = 620, bh = 158, x = (D.total === "centerSeal" || D.total === "royalSeal") ? (PW - bw) / 2 : (D.total === "leftRight" || D.total === "banner" ? M : PW - M - bw);
       var totalText = formatNum(splitNum(info.total));
       if (D.total === "banner") bw = W;
 
@@ -1691,8 +1936,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
 
       var numTotal = parseFloat(info.total);
       if (Number.isInteger(numTotal) && NOTES[numTotal]){
-        var noteX = (D.total === "leftRight") ? (PW - M - 280) : M;
-        var noteY = (D.total === "banner") ? (y0 + bh + 18) : (y0 + 60);
+        var noteX = (D.total === "leftRight") ? (PW - M - 230) : M;
+        var noteY = (D.total === "banner" || D.total === "centerSeal" || D.total === "royalSeal") ? (y0 + bh + 18) : (y0 + 56);
         drawDecorativeNote(g, noteX, noteY, numTotal);
       }
 
@@ -1701,6 +1946,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         if (D.total === "skewLeft"){ g.fillStyle = C.accent; g.fillRect(x, y0, 12, bh); }
         g.fillStyle = C.accent; g.font = "700 23px " + FONT; spaced(g, L.total, x + 34, y0 + 50, 3, "left");
         g.fillStyle = C.on; g.textAlign = "right"; fitFont(g, totalText, 800, 72, 36, bw - 72, HF); g.fillText(totalText, x + bw - 34, y0 + 124);
+      } else if (D.total === "royalSeal"){
+        rr(g, x, y0, bw, bh, 18); g.fillStyle = C.primary; g.fill();
+        rr(g, x + 8, y0 + 8, bw - 16, bh - 16, 12); g.strokeStyle = C.accent; g.lineWidth = 2.5; g.stroke();
+        g.fillStyle = C.accent; g.font = "700 23px " + FONT; spaced(g, L.total, x + 38, y0 + 54, 4, "left");
+        g.fillStyle = C.on; g.textAlign = "right"; fitFont(g, totalText, 800, 74, 36, bw - 76, HF); g.fillText(totalText, x + bw - 38, y0 + 126);
+      } else if (D.total === "swissBox"){
+        g.fillStyle = C.soft; g.fillRect(x, y0, bw, bh);
+        g.strokeStyle = C.ink; g.lineWidth = 3; g.strokeRect(x, y0, bw, bh);
+        g.fillStyle = C.accent; g.fillRect(x, y0, 14, bh);
+        g.fillStyle = C.accent; g.font = "700 23px " + FONT; spaced(g, L.total, x + 36, y0 + 52, 3, "left");
+        g.fillStyle = C.ink; g.textAlign = "right"; fitFont(g, totalText, 800, 72, 36, bw - 76, HF); g.fillText(totalText, x + bw - 34, y0 + 124);
       } else if (D.total === "centerSeal" || D.total === "floatingCard"){
         rr(g, x, y0, bw, bh, 24); g.fillStyle = C.soft; g.fill(); g.strokeStyle = C.accent; g.lineWidth = 4; g.stroke();
         g.fillStyle = C.primary; g.font = "700 23px " + FONT; spaced(g, L.total, x + 36, y0 + 54, 3, "left");
@@ -1712,13 +1968,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         hline(g, x, PW - M, y0 + bh, C.line, 3);
       }
       g.textAlign = "left";
-      if (info.words){
-        var yy = y0 + bh + 46;
-        g.textAlign = "right"; g.fillStyle = C.muted; g.font = "700 21px " + FONT; g.fillText(L.inWords, PW - M, yy);
-        g.fillStyle = C.ink; g.font = "600 27px " + FONT;
-        wordLines.forEach(function(ln, i){ g.fillText(ln, PW - M, yy + 40 + i * 36); });
-        g.textAlign = "left";
-      }
     }
     function footer(p, n, all){
       var g = p.g;
@@ -1735,10 +1984,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     }
 
     curPage = newPage(0);
-    if (info.words){
-      curPage.g.font = "600 27px " + FONT; wordLines = wrap(curPage.g, info.words, W * 0.62).slice(0, 3);
-      TOTALS_H = 260 + 36 * (wordLines.length - 1);
-    }
+    TOTALS_H = (D.total === "banner" || D.total === "centerSeal" || D.total === "royalSeal") ? 300 : 220;
     y = headFirst(curPage.g); y = cards(curPage.g, y); y = tHead(curPage.g, y);
     info.items.forEach(function(it, i){
       if (y + ROWH > LIMIT){ curPage = newPage(pages.length); y = headMore(curPage.g); y = tHead(curPage.g, y); }
@@ -1838,8 +2084,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     showPages(); buildDesignChips();
     $("pdfTitle").textContent = bill.shop || (I18N[uiLang].pdf.bill + " • " + formatNum(splitNum(itemsTotal(bill.items))));
     $("pdfOverlay").classList.add("open");
-    if (fromHistory) replaceModalState("pdf");
-    else pushModalState("pdf");
+    pushModalState("pdf");
     var body = $("pdfOverlay").querySelector(".pdf-body"); if (body) body.scrollTop = 0;
   }
   function closePdfPreview(){
@@ -1875,6 +2120,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   function shareBill(){
     var fallbackTitle = I18N[uiLang].pdf.bill;
     var title = (bill && bill.shop) || fallbackTitle;
+    function fallbackCopy(){
+      var text = billText();
+      return copyText(text).then(function(ok){
+        if (ok) saveBillToHistory();
+        toast(ok ? t("textCopied") : t("shareFail"));
+      });
+    }
     function textShare(){
       var text = billText();
       if (navigator.share) {
@@ -1882,13 +2134,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
           saveBillToHistory();
         }).catch(function(err){
           if (err && err.name === "AbortError") return;
-          throw err;
+          return fallbackCopy();
         });
       }
-      return copyText(text).then(function(ok){
-        if (ok) saveBillToHistory();
-        toast(ok ? t("textCopied") : t("shareFail"));
-      });
+      return fallbackCopy();
     }
     makePdfBlob().then(function(blob){
       var file = null;
@@ -1926,6 +2175,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("pdfCloseAction").addEventListener("click", closePdfPreview);
   $("pdfEditAction").addEventListener("click", function(){
     $("pdfOverlay").classList.remove("open");
+    $("hist").classList.remove("open");
     openedFromHistory = false;
     $("billShop").value = bill.shop || "";
     $("billSeller").value = bill.seller || "";
@@ -1941,7 +2191,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("pdfShareAction").addEventListener("click", shareBill);
   $("pdfPrintAction").addEventListener("click", printBill);
 
-  // ===== 11. हिस्ट्री (सर्च + चुनकर डिलीट + सीधे PDF) =====
+  // ===== 11. हिस्ट्री (सर्च + नीचे Delete Selected + ऐप कन्फ़र्मेशन) =====
   var activeHistTab = "calc", selectedBillIds = {};
 
   function filteredBills(){
@@ -1966,6 +2216,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     $("btnHistCalc").setAttribute("aria-selected", !isBill ? "true" : "false");
     $("btnHistBill").setAttribute("aria-selected", isBill ? "true" : "false");
     $("histTools").classList.toggle("show", isBill);
+    // बिल हिस्ट्री में Clear History छिपाएँ और नीचे Delete Selected दिखाएँ
+    $("histClear").style.display = isBill ? "none" : "block";
+    $("histDelSel").style.display = isBill ? "block" : "none";
 
     var list = $("list");
     list.innerHTML = "";
@@ -2014,7 +2267,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         if (h.t) b.appendChild(el("small", "", fmtWhen(h.t)));
 
         b.addEventListener("click", function(){
-          $("hist").classList.remove("open");
           bill = {
             id: h.t, openedAt: h.t,
             shop: h.shop || "", seller: h.seller || "", sellerPhone: h.sellerPhone || "",
@@ -2042,7 +2294,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         b.addEventListener("click", function(){
           expr = calcVal; cur = expr.length; result = null; err = "";
           sheet("hist", false); render(); saveState();
-          if (kbMode) syncKbInput();
         });
         list.appendChild(b);
       }
@@ -2059,14 +2310,15 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   $("histDelSel").addEventListener("click", function(){
     var ids = Object.keys(selectedBillIds);
     if (!ids.length) return;
-    if (typeof confirm === "function" && !confirm(t("confirmDelSel"))) return;
-    billRecords = billRecords.filter(function(h){ return !selectedBillIds[h.t]; });
-    selectedBillIds = {};
-    saveBillRecords();
-    renderHistory();
+    appConfirm(t("confirmDelSel"), function(){
+      billRecords = billRecords.filter(function(h){ return !selectedBillIds[h.t]; });
+      selectedBillIds = {};
+      saveBillRecords();
+      renderHistory();
+    });
   });
 
-  // ===== 12. थीम, आवाज़, 3-नंबर रजिस्ट्रेशन, बैकअप और सेटिंग्स =====
+  // ===== 12. थीम, आवाज़, 3-नंबर रजिस्ट्रेशन (10 अंक सीमा), बैकअप और सेटिंग्स =====
   function svg(inner){
     return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
@@ -2128,16 +2380,19 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   }
   function setSound(on){ soundOn = on; lsSet(SKEY, on ? "on" : "off"); syncOpts(); beep("5"); }
 
-  // रजिस्ट्रेशन में 3 तक मोबाइल नंबर
   var regPhonesTemp = [""];
   function renderRegPhones(){
     var box = $("regPhonesList"); box.innerHTML = "";
     regPhonesTemp.forEach(function(val, idx){
       var row = el("div", "reg-phone-row");
-      var inp = el("input", "fld"); inp.type = "tel"; inp.maxLength = 20; inp.autocomplete = "off";
+      var inp = el("input", "fld"); inp.type = "tel"; inp.maxLength = 10; inp.setAttribute("inputmode", "numeric"); inp.autocomplete = "off";
       inp.placeholder = t("sellerPhonePh") + (regPhonesTemp.length > 1 ? " (" + (idx + 1) + ")" : "");
-      inp.value = val;
-      inp.addEventListener("input", function(){ regPhonesTemp[idx] = inp.value; });
+      inp.value = cleanTenDigits(val);
+      inp.addEventListener("input", function(){
+        var v = cleanTenDigits(inp.value);
+        if (inp.value !== v) inp.value = v;
+        regPhonesTemp[idx] = v;
+      });
       row.appendChild(inp);
       if (regPhonesTemp.length > 1){
         var del = el("button", "bdel", "×"); del.type = "button";
@@ -2170,11 +2425,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   onPick("optLang", "data-l", setLang);
   onPick("optSound", "data-s", function(v){ setSound(v === "on"); });
   on("themeBtn", function(){ setTheme(isDark() ? "light" : "dark"); });
-  on("gearBtn", function(){ if (kbMode) setKbMode(false); syncOpts(); updateRegUi(); sheet("settings", true); });
+  on("gearBtn", function(){ syncOpts(); updateRegUi(); sheet("settings", true); });
   on("regLink", openRegModal);
   on("regSaveBtn", function(){
     var s = $("regShop").value.trim(), sl = $("regSeller").value.trim();
-    var phs = regPhonesTemp.map(function(p){ return String(p || "").trim(); }).filter(Boolean).slice(0, 3);
+    var phs = regPhonesTemp.map(cleanTenDigits).filter(Boolean).slice(0, 3);
     regProfile = (s || sl || phs.length) ? {shop: s, seller: sl, phones: phs} : null;
     lsSet(REGKEY, JSON.stringify(regProfile));
     if (s) lsSet(SHOPKEY, s);
@@ -2227,13 +2482,37 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
         }
         if (Array.isArray(data.bills)){
           var seenB = {};
-          billRecords.concat(data.bills).forEach(function(b){ if (b && b.k === "bill" && Array.isArray(b.items)) seenB[b.t] = b; });
+          billRecords.concat(data.bills).forEach(function(b){
+            if (!b || b.k !== "bill" || !Array.isArray(b.items) || typeof b.t !== "number") return;
+            var cleanItems = b.items.filter(function(it){ return it && typeof it === "object"; }).map(function(it){
+              return {s: it.s === "-" ? "-" : "+", x: String(it.x || "0"), v: String(it.v || "0"), n: String(it.n || "").slice(0, 60)};
+            });
+            if (!cleanItems.length) return;
+            seenB[b.t] = {
+              k: "bill", t: b.t,
+              shop: String(b.shop || "").slice(0, 50),
+              seller: String(b.seller || "").slice(0, 40),
+              sellerPhone: String(b.sellerPhone || "").slice(0, 40),
+              customer: String(b.customer || "").slice(0, 40),
+              customerPhone: cleanTenDigits(b.customerPhone || ""),
+              design: (typeof b.design === "number" && b.design >= 0 && b.design < DESIGNS.length) ? b.design : 0,
+              seed: typeof b.seed === "number" ? b.seed : 0,
+              items: cleanItems,
+              e: String(b.e || ""),
+              r: itemsTotal(cleanItems)
+            };
+          });
           billRecords = Object.keys(seenB).map(function(k){ return seenB[k]; })
             .sort(function(a, b){ return (b.t || 0) - (a.t || 0); });
           saveBillRecords();
         }
         if (data.reg && typeof data.reg === "object"){
-          regProfile = data.reg;
+          var rPhones = Array.isArray(data.reg.phones) ? data.reg.phones.map(cleanTenDigits).filter(Boolean).slice(0, 3) : [];
+          regProfile = {
+            shop: String(data.reg.shop || "").slice(0, 50),
+            seller: String(data.reg.seller || "").slice(0, 40),
+            phones: rPhones
+          };
           lsSet(REGKEY, JSON.stringify(regProfile));
           updateRegUi();
         }
@@ -2252,20 +2531,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
   on("btnHistCalc", function(){ switchHistTab("calc"); });
   on("btnHistBill", function(){ switchHistTab("bill"); });
 
-  var clearingHistory = false;
   on("histClear", function(){
-    if (clearingHistory) return;
-    clearingHistory = true;
-    try {
-      var isCalc = activeHistTab === "calc";
-      var msg = t(isCalc ? "confirmClearCalc" : "confirmClearBill");
-      if (typeof confirm === "function" && !confirm(msg)) return;
-      if (isCalc) { calcRecords = []; saveCalcRecords(); }
-      else { billRecords = []; selectedBillIds = {}; saveBillRecords(); }
+    if (activeHistTab !== "calc") return;
+    appConfirm(t("confirmClearCalc"), function(){
+      calcRecords = [];
+      saveCalcRecords();
       renderHistory();
-    } finally {
-      clearingHistory = false;
-    }
+    });
   });
 
   on("settings", function(ev){ if (ev.target === $("settings")) sheet("settings", false); });
@@ -2278,7 +2550,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--eq);outline-off
     var pdfOpen = $("pdfOverlay").classList.contains("open"), open = document.querySelector(".overlay.open");
     if (ev.key === "Escape"){
       if (pdfOpen || open){ closeTopModal(false); ev.preventDefault(); return; }
-      if (kbMode){ setKbMode(false); ev.preventDefault(); return; }
       return;
     }
     if (pdfOpen || open || (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName))) return;
